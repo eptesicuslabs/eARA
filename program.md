@@ -135,6 +135,51 @@ Before EVERY training launch:
 
 If ANY check fails, fix before launching. Never send broken code to remote GPU.
 
+## Mandatory subagent verification (pre-push)
+
+When running the autoresearch loop (see `scripts/autoresearch_loop.md`),
+steps 2 through 5 MUST each be launched as a SEPARATE SUBAGENT using the
+Agent tool. This is not optional. This is not flexible. There are no
+exceptions based on the size, simplicity, or nature of the change.
+
+### Why subagents are mandatory
+
+A single agent accumulates blind spots over a long session. It becomes
+anchored to its own assumptions. It reads the code once and believes it
+understands it. It does not. Subagents provide independent verification
+because each one starts with fresh context, no anchoring, and no
+motivated reasoning about changes it already made.
+
+Previous runs that skipped subagents pushed broken code. The fact that
+run_009 worked despite skipping steps 2-4 was luck, not competence.
+Luck is not a substitute for process.
+
+### Rationalizations that mean STOP
+
+If you catch yourself thinking any of the following, it means you are
+about to violate the protocol. Stop. Launch the subagent.
+
+| Thought | Why it is wrong |
+|---|---|
+| "This change is simple enough that I do not need a research agent." | Simple changes have caused the worst crashes. A one-line shape change broke serialization in run_005. Simplicity is not safety. |
+| "I already explored the codebase." | You explored it in your current context window. You have blind spots you cannot see. That is the entire point of a fresh subagent. |
+| "The smoke test will catch everything." | The smoke test catches runtime crashes. It does not catch plan deviation, incorrect API usage, memory budget violations, or logic errors that produce wrong but non-crashing results. |
+| "These agents are overkill for this change." | The protocol exists because previous agents thought the same thing and pushed broken code. You are not the exception. |
+| "I can do all the checks myself without subagents." | No. You made the change. You are biased toward believing it is correct. Independent review exists to counter author bias. |
+| "I already caught the bug through testing." | You caught one bug. The subagents check for categories of problems you are not even considering: plan compliance, API compatibility, memory budgets, serialization. |
+
+### Verification gate
+
+Before step 7 (PUSH), you must be able to list:
+
+- The agent ID or task ID from the RESEARCH AGENT (step 2)
+- The agent ID or task ID from the PLAN COMPLIANCE AGENT (step 3)
+- The agent ID or task ID from the SELF-CRITIQUE AGENT (step 4)
+- The agent ID or task ID from the SMOKE TEST AGENT (step 5)
+
+If you cannot list all four, you did not run them. Go back and run them.
+Do not rationalize. Do not substitute your own review. Launch the agents.
+
 ## Output format
 
 The training script must write a JSON file (at `results_file`) containing
