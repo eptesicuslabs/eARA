@@ -1,6 +1,6 @@
-# eara
+# eARA
 
-eptesicus autonomous research agent. give an ai agent a training script and
+eptesicus Autonomous Research Agent. give an ai agent a training script and
 let it experiment autonomously. it modifies the code, trains, checks if the
 result improved, keeps or discards, and repeats. you come back to a log of
 experiments and a better model.
