@@ -340,3 +340,91 @@ to counter YOUR biases, not someone else's. Every enforcement mechanism in
 this document was added because an agent exactly like you — with the same
 capabilities, the same context window, the same instructions — violated
 the protocol and shipped broken code. You are not the exception.
+
+---
+
+## Mandatory Agent Count Gate
+
+**Added v1.2. Applies at: standard, strict, paranoid.**
+
+Before ANY commit, the agent MUST verify it has dispatched the COMPLETE
+set of required agents for the current mode. Not "some." Not "most." ALL.
+
+### Execution mode (standard+ strictness)
+
+The following agents are MANDATORY before every commit:
+
+**Pre-commit (4 agents, each a SEPARATE subagent):**
+1. **Research Agent** — verify technical assumptions, API compatibility,
+   dependency versions, published benchmarks.
+2. **Plan Compliance Agent** — verify implementation matches spec, detect
+   scope creep and scope gaps.
+3. **Self-Critique Agent** — read every changed file fresh, hunt for crash
+   risks with specific line numbers.
+4. **Smoke Test Agent** — write and run a targeted test exercising the
+   changed code paths. Must execute, not just read.
+
+**Post-commit (4 agents, run after commit is made):**
+5. **Analysis Agent** — compare results to prior state, check for regressions.
+6. **Research Grounding Agent** — compare approach to published best practices.
+7. **Plan Compliance Agent (post)** — check if results move toward goals.
+8. **Documentation Agent** — update all stale docs and state files.
+
+**On anomaly (2 agents, conditional):**
+9. **Web Research Agent** — search for explanations of unexpected behavior.
+10. **Code Investigation Agent** — trace issue through code, identify root cause.
+
+**Reviewer agents (dispatched per review policy, 2-4 agents):**
+11. **Spec Compliance Reviewer** — at standard+.
+12. **Code Quality Reviewer** — at standard+.
+13. **Native Code Reviewer** — at strict+ for platform files.
+14. **Security Reviewer** — at strict+ for security files.
+
+### The Count Gate
+
+```
+AGENT COUNT GATE
+  Mode:                          {execution | loop}
+  Strictness:                    {level}
+  ──────────────────────────────────────────────
+  PRE-COMMIT AGENTS:
+    Research Agent:              {DISPATCHED + RETURNED | MISSING}
+    Plan Compliance Agent:       {DISPATCHED + RETURNED | MISSING}
+    Self-Critique Agent:         {DISPATCHED + RETURNED | MISSING}
+    Smoke Test Agent:            {DISPATCHED + RETURNED | MISSING}
+  ──────────────────────────────────────────────
+  REVIEWER AGENTS:
+    Spec Compliance Reviewer:    {DISPATCHED + RETURNED | MISSING}
+    Code Quality Reviewer:       {DISPATCHED + RETURNED | MISSING}
+  ──────────────────────────────────────────────
+  Required count:                {N}
+  Dispatched count:              {M}
+  All required dispatched:       {YES | NO}
+  Gate decision:                 {PASS | BLOCKED}
+```
+
+If `Dispatched count < Required count`: **BLOCKED. Go back. Dispatch the
+missing agents. There is no path forward that skips agents.**
+
+### Why this exists
+
+The eAgent agent was told "use all 12 agents" THREE TIMES across one
+session. Each time it acknowledged. Each time it ran fewer than required:
+- First: 1 of 4 reviewers
+- Second: 2 of 4 reviewers
+- Third: 3 of 12 full agents (research + plan + self-critique only)
+
+Each correction produced incrementally more agents but never the full set.
+The agent treated corrections as negotiations rather than mandates. This
+gate makes it impossible to commit without counting. You cannot produce
+the count record without knowing how many agents you dispatched. If the
+count is wrong, the gate blocks.
+
+### Threat: Incremental Compliance
+
+The specific failure pattern this gate addresses is **incremental compliance**:
+the agent runs more agents each time it is corrected, but never all of them.
+This creates the illusion of progress toward compliance while remaining
+non-compliant. The gate is binary: you either dispatched all N required
+agents, or the gate is BLOCKED. There is no partial credit. There is no
+"closer to compliance." N-1 out of N is the same as 0 out of N.

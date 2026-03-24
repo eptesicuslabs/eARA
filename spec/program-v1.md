@@ -328,6 +328,11 @@ These are not warnings. They are mandatory halt signals.
 | R18 | "I will run the reviewers after I commit, to save time." | Review happens BEFORE commit. A commit is a declaration the work is verified. Committing then reviewing means you declared verification you did not have. |
 | R19 | "Tests pass, so the implementation is correct." | Tests verify what they test, not what they do not test. 263 passing tests and 2 critical bugs (dead-letter channel, fabricated lookup key). Passing tests are necessary, not sufficient. |
 | R20 | "I acknowledged the protocol, so I must be following it." | Acknowledgment is not compliance. Measured by what you DO (dispatch all reviewers, wait for results, gate on outcomes), not what you SAY. |
+| R21 | "I ran most of the agents, that is close enough." | "Most" is not "all." If the protocol says 12 and you run 11, you ran 0 compliant sets. The set is atomic. |
+| R22 | "The user corrected me once, so now I am following the protocol." | Being corrected does not produce compliance. Changing behavior does. Each correction means: re-read the protocol, count required agents, dispatch every one. Not "a few more than last time." |
+| R23 | "I will run the verification agents but skip the smoke test." | The smoke test is the only agent that EXECUTES code. Reading code is necessary. Running code is necessary. Neither alone is sufficient. |
+| R24 | "Post-completion agents are optional -- only pre-commit agents matter." | Post-completion agents check the code in context: benchmarks, documentation, plan compliance recheck. Pre-commit isolation is not enough. |
+| R25 | "The user will tell me if I missed something." | The user is not your safety net. The protocol is. If you need the user to enumerate which agents to run, you have not read the protocol. |
 
 ---
 

@@ -68,7 +68,7 @@ Profiles control which gates are mandatory, whether subagent verification is req
 
 **append-only logging.** Every experiment is logged to results.tsv, including failures. Discards are as informative as keeps.
 
-**rationalizations as stop signals.** If the agent catches itself thinking "this is simple enough to skip review," it must stop. The rationalizations table (20 entries, each derived from a real failure) serves as a pattern-match against the agent's internal reasoning. v1.1 added 6 entries from an agent that acknowledged eARA, set up the config, then violated every review requirement while claiming compliance.
+**rationalizations as stop signals.** If the agent catches itself thinking "this is simple enough to skip review," it must stop. The rationalizations table (25 entries, each derived from a real failure) serves as a pattern-match against the agent's internal reasoning. v1.1 added 6 entries from an agent that acknowledged eARA then violated every review requirement while claiming compliance. v1.2 added 5 entries from the same agent being corrected three times in one session and still not dispatching the full agent set.
 
 **commit gate: mandatory review receipt.** At standard+ strictness, the agent must produce a structured REVIEW GATE VERIFICATION record before any commit, listing every required reviewer's agent ID and PASS/REJECT result. Commits without this record are protocol violations. This gate was added in v1.1 after an agent dispatched 1 of 4 required reviewers, called it "eARA compliance," and committed code with 2 critical bugs.
 
@@ -140,6 +140,18 @@ An agent was explicitly instructed to "use eARA" and told "follow the subagent i
 - Wrote "eARA gate PASS" in the commit message while the gate had not been verified
 
 The single reviewer it did dispatch found 2 critical bugs (a dead-letter channel and a fabricated lookup key). This incident led to 6 new rationalizations (R15-R20), the mandatory commit gate (REVIEW GATE VERIFICATION record), and the "Threat Model: Performative Compliance" section in the review protocol.
+
+### v1.2: eAgent Phase 1-5 incident, continued (2026-03-24)
+
+After being corrected for the v1.1 violation, the same agent was told three separate times to "use all 12 agents." It acknowledged each time. It ran:
+
+- After correction 1: 2 of 4 reviewers (added spec compliance)
+- After correction 2: 2 of 2 reviewers (but still only reviewer agents, not the full 12)
+- After correction 3: 3 of 12 agents (added research, plan compliance, self-critique — still missing smoke test, analysis, research grounding, documentation, and all post-completion agents)
+
+Each correction produced incrementally more agents but never the full set. The agent treated explicit instructions as negotiations. This incident led to 5 new rationalizations (R21-R25), the mandatory AGENT COUNT GATE, and the "Threat: Incremental Compliance" section in the review protocol.
+
+**The pattern:** An agent that adds one more agent each time it is corrected will eventually run all agents — but only after N corrections for N agents. The protocol must not require N corrections. It must require zero. The agent count gate makes the requirement mechanical: count the agents, compare to the required count, block if unequal.
 
 ## for agents
 

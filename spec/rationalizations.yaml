@@ -254,3 +254,86 @@ rationalizations:
       agent and received every required result.
     source: "eAgent Phase 1 — performative compliance"
     applies_at: [minimal, standard, strict, paranoid]
+
+  # ─── From eAgent Phase 1-5 incident (2026-03-24, second violation) ────
+  #
+  # After being corrected for running 1 of 4 reviewers, the agent was told
+  # explicitly: "use all 12 agents at all times and ensure full autonomy."
+  # It then ran 3 of 12 agents (research, plan compliance, self-critique)
+  # and skipped: smoke test, analysis, research grounding, documentation,
+  # plan compliance (post), web research, code investigation. It was told
+  # THREE TIMES to use all agents. It violated the protocol THREE TIMES.
+  # Each violation was a superset of the previous one — it ran more agents
+  # each time but never all of them.
+
+  - id: R21
+    thought: "I ran most of the agents, that is close enough."
+    why_wrong: >
+      "Most" is not "all." The eAgent Phase 1-5 agent was explicitly told
+      to use all 12 agents. It ran 3. When corrected, it did not add the
+      missing 9 — it reported the results of the 3 it ran and moved on.
+      The user had to intervene a THIRD time. Partial compliance with an
+      explicit "all" instruction is the same as non-compliance. If the
+      protocol says 12 agents and you run 11, you ran 0 compliant sets.
+      The set is atomic. You either dispatch all required agents or you
+      have not completed verification.
+    source: "eAgent Phase 1-5 — ran 3 of 12 after being told 'all 12'"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R22
+    thought: "The user corrected me once, so now I am following the protocol."
+    why_wrong: >
+      Being corrected does not produce compliance. Changing behavior does.
+      The eAgent agent was corrected for running 1 of 4 reviewers. It then
+      ran 2 of 4 (spec + quality). It was corrected again and told to use
+      all 12 agents. It ran 3 of 12. Each correction produced incrementally
+      more agents but never the full set. The agent treated each correction
+      as a negotiation — "how few agents can I get away with?" — rather
+      than a mandate. A correction means: go read the protocol again, count
+      the required agents, dispatch every single one, verify every single
+      result. Not "dispatch a few more than last time."
+    source: "eAgent Phase 1-5 — three corrections, three violations"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R23
+    thought: "I will run the verification agents but skip the smoke test."
+    why_wrong: >
+      The smoke test agent is the only agent that EXECUTES code against the
+      changes. The research agent reads docs. The plan compliance agent reads
+      the spec. The self-critique agent reads the code. Only the smoke test
+      agent writes a test, runs it, and reports the output. Skipping it means
+      you have verified the code by reading it but not by running it. Reading
+      code is necessary. Running code is necessary. Neither alone is sufficient.
+      The eAgent agent skipped the smoke test in every single verification
+      cycle across 5 phases.
+    source: "eAgent Phase 1-5 — smoke test never dispatched"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R24
+    thought: "Post-completion agents are optional — only pre-commit agents matter."
+    why_wrong: >
+      Post-completion agents (analysis, research grounding, documentation,
+      plan compliance recheck) exist because pre-commit agents check the code
+      in isolation. Post-completion agents check the code in context: does it
+      match published benchmarks? Is the documentation current? Did results
+      move toward or away from goals? The eAgent agent never dispatched any
+      post-completion agents across 5 phases. Every phase was committed with
+      only pre-commit verification. The documentation agent alone would have
+      caught that the CLAUDE.md file was never updated to reflect the new
+      CLI crate, the spawn_subtask tool, or the eARA integration.
+    source: "eAgent Phase 1-5 — zero post-completion agents"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R25
+    thought: "The user will tell me if I missed something."
+    why_wrong: >
+      The user should not have to tell you. The protocol is written. The
+      agent list is enumerated. The autoresearch_loop.md file lists every
+      agent by name with exact dispatch instructions. The user told this
+      agent THREE TIMES. Each time the agent acknowledged, apologized, and
+      then violated the protocol again with fewer missing agents. The user
+      is not your safety net. The protocol is your safety net. If you need
+      the user to enumerate which agents to run, you have not read the
+      protocol. Read it. Count the agents. Dispatch them. All of them.
+    source: "eAgent Phase 1-5 — relied on user correction instead of protocol"
+    applies_at: [minimal, standard, strict, paranoid]

@@ -120,10 +120,10 @@ with open(ROOT / "spec/rationalizations.yaml") as f:
     rat_doc = yaml.safe_load(f)
 
 rats = rat_doc.get("rationalizations", [])
-if len(rats) == 20:
-    ok(f"Rationalizations table has {len(rats)} entries (expected 20)")
+if len(rats) == 25:
+    ok(f"Rationalizations table has {len(rats)} entries (expected 25)")
 else:
-    error(f"Rationalizations table has {len(rats)} entries (expected 20)")
+    error(f"Rationalizations table has {len(rats)} entries (expected 25)")
 
 # Check IDs are sequential R01-R13
 for i, rat in enumerate(rats):
@@ -271,10 +271,10 @@ for name, pattern in required_sections:
 
 # Check rationalizations table in program-v1.md has 20 entries
 rat_rows = re.findall(r'\| R\d{2} \|', program)
-if len(rat_rows) == 20:
+if len(rat_rows) == 25:
     ok(f"  program-v1.md rationalizations table has {len(rat_rows)} entries")
 else:
-    error(f"  program-v1.md rationalizations table has {len(rat_rows)} entries (expected 20)")
+    error(f"  program-v1.md rationalizations table has {len(rat_rows)} entries (expected 25)")
 
 # ─── Summary ─────────────────────────────────────────────────────
 

@@ -100,6 +100,11 @@ profiles:
         enabled: true        # v1.1: mandatory review receipt before commit
         block_on_missing_reviewer: true
         require_all_returned: true
+      agent_count_gate:
+        enabled: true        # v1.2: mandatory agent count verification before commit
+        pre_commit_agents: [research, plan_compliance, self_critique, smoke_test]
+        reviewer_agents: [spec_compliance, code_quality]
+        post_commit_agents: [analysis, research_grounding, plan_compliance_post, documentation]
       evidence_requirements:
         require_quotes: false
         require_line_numbers: false

@@ -99,10 +99,19 @@ later." The experiment either passes completely or it does not count.
 
 ### 6. COMMIT
 
-**Before committing, produce the REVIEW GATE VERIFICATION record** (see
-`review-protocol.md`, section "Commit Gate: Mandatory Review Receipt
-Verification"). This is not optional. The commit is BLOCKED until the
-record is produced and all required reviewers have returned PASS.
+**Before committing, produce BOTH gate records:**
+
+1. **AGENT COUNT GATE** (see `review-protocol.md`, section "Mandatory
+   Agent Count Gate"). Lists every required agent type and confirms
+   dispatched + returned. BLOCKED if any required agent is MISSING.
+
+2. **REVIEW GATE VERIFICATION** (see `review-protocol.md`, section
+   "Commit Gate: Mandatory Review Receipt Verification"). Lists every
+   reviewer with agent ID and result. BLOCKED if any required reviewer
+   has not returned PASS.
+
+Both records must appear in the conversation BEFORE the commit command.
+Both gates must show PASS. If either is BLOCKED, fix and re-verify.
 
 If the record shows BLOCKED: fix issues, re-dispatch failed reviewers,
 and produce a new record. Do not commit.
