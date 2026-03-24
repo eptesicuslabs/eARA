@@ -1,0 +1,437 @@
+# eARA Configuration Schema v1.0
+# JSON Schema expressed in YAML for eara.yaml validation
+# This schema defines the structure that agents parse at session start.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://eptesicuslabs.com/eara/v1/schema"
+title: "eARA Configuration"
+description: >
+  Configuration file for eARA discipline framework. Placed at project root as
+  eara.yaml. Agents parse this at session start to determine strictness,
+  mode, gates, review policy, and loop behavior.
+type: object
+required: [eara_version, project, strictness, mode]
+
+# Conditional requirements: metric and loop are required when mode is loop.
+if:
+  properties:
+    mode:
+      const: loop
+then:
+  required: [metric, loop]
+
+properties:
+
+  # ─── Identity ───────────────────────────────────────────────────────
+
+  eara_version:
+    type: string
+    const: "1.0"
+    description: "Schema version. Must be '1.0'."
+
+  project:
+    type: string
+    description: "Human-readable project name."
+
+  description:
+    type: string
+    description: "What this session or project is about."
+
+  # ─── Strictness ─────────────────────────────────────────────────────
+
+  strictness:
+    description: >
+      Either a profile name (string) or an object with a base profile and
+      overrides that are deep-merged into it.
+    oneOf:
+      - type: string
+        enum: [minimal, standard, strict, paranoid]
+      - type: object
+        required: [profile]
+        properties:
+          profile:
+            type: string
+            enum: [minimal, standard, strict, paranoid]
+          overrides:
+            type: object
+            description: "Deep-merged into the base profile. Same shape as the profile definition."
+
+  # ─── Task Mode ──────────────────────────────────────────────────────
+
+  mode:
+    type: string
+    enum: [execution, loop]
+    description: >
+      execution: Changes are known (implement spec, fix bug, refactor).
+      Use eARA discipline without the loop.
+      loop: Agent runs autonomously for extended periods — automation tasks,
+      ML training, monitoring, long-running pipelines. The agent experiments,
+      measures, keeps/discards, and never stops until termination conditions
+      are met or it is externally interrupted.
+
+  # ─── Metric ─────────────────────────────────────────────────────────
+
+  metric:
+    type: object
+    description: >
+      Required for loop mode. Optional for execution mode (where gates
+      serve as the pass/fail metric). Defines what to measure and in
+      which direction improvement lies.
+    required: [name, direction, collect_command]
+    properties:
+      name:
+        type: string
+        description: "What to measure (e.g., val_loss, p95_latency_ms, coverage_percent)."
+      direction:
+        type: string
+        enum: [lower, higher, pass]
+        description: >
+          lower: metric should decrease (loss, latency, binary size).
+          higher: metric should increase (accuracy, coverage, throughput).
+          pass: binary composite gate (build + test + review all pass).
+      collect_command:
+        type: string
+        description: "Shell command that outputs the metric value to stdout."
+      baseline:
+        type: [number, "null"]
+        description: "Starting value. null if unknown (will be measured at session start)."
+      target:
+        type: [number, "null"]
+        description: "Goal value. null if just 'improve continuously'."
+
+  # ─── Gates ──────────────────────────────────────────────────────────
+
+  gates:
+    type: object
+    description: >
+      Non-negotiable constraints. Gates are checked after every experiment.
+      A gate failure means the experiment is discarded (or fixed in-place
+      before proceeding). Gates protect everything EXCEPT the primary metric.
+    properties:
+      build:
+        $ref: "#/$defs/command_gate"
+      test:
+        $ref: "#/$defs/command_gate"
+      lint:
+        $ref: "#/$defs/command_gate"
+      spec_compliance:
+        $ref: "#/$defs/subagent_gate"
+      no_regression:
+        $ref: "#/$defs/command_gate"
+      test_before_ship:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            description: >
+              When true, code that introduces new public surface (functions,
+              tools, endpoints, API) is NOT eligible for 'keep' until tests
+              exist that exercise the new code. Enabled at standard+.
+          required:
+            type: boolean
+        additionalProperties: false
+      post_merge_verification:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            description: >
+              When true, after merging parallel work (worktrees, branches),
+              ALL gates are re-run from scratch. Not incremental. Enabled
+              at strict+.
+          required:
+            type: boolean
+        additionalProperties: false
+      custom_gates:
+        type: array
+        items:
+          type: object
+          required: [name, command, required]
+          properties:
+            name:
+              type: string
+            command:
+              type: string
+            required:
+              type: boolean
+            description:
+              type: string
+          additionalProperties: false
+
+  # ─── Review Policy ──────────────────────────────────────────────────
+
+  review:
+    type: object
+    description: >
+      Controls subagent verification. The single highest-value component
+      of eARA. Fresh context prevents blind spots. Independent review
+      prevents optimistic self-assessment.
+    properties:
+      default_policy:
+        type: string
+        enum: [none, spec_only, spec_and_quality, full]
+        description: >
+          none: no review (minimal only).
+          spec_only: spec compliance reviewer only.
+          spec_and_quality: spec + code quality reviewers (standard default).
+          full: spec + quality + domain-specific reviewers (paranoid default).
+      reviewers:
+        type: object
+        properties:
+          spec_compliance:
+            $ref: "#/$defs/reviewer"
+          code_quality:
+            $ref: "#/$defs/reviewer"
+          native_code:
+            $ref: "#/$defs/reviewer"
+            description: "For files touching OS APIs, FFI, P/Invoke, native bindings."
+          security:
+            $ref: "#/$defs/reviewer"
+            description: "For files touching auth, crypto, permissions, security boundaries."
+          calibration:
+            type: object
+            description: >
+              For audit/assessment subagents: verify accuracy on a known
+              sample before trusting the full output. If the audit disagrees
+              with ground truth on any sample item, discard and re-dispatch.
+            properties:
+              enabled:
+                type: boolean
+              sample_size:
+                type: integer
+                minimum: 1
+                description: "Number of known-good items to spot-check."
+            additionalProperties: false
+      per_file_overrides:
+        type: array
+        items:
+          type: object
+          required: [pattern, policy, reason]
+          properties:
+            pattern:
+              type: string
+              description: "Glob pattern (e.g., '**/platform/*.ts')."
+            policy:
+              type: string
+              enum: [elevated, reduced]
+            extra_reviewers:
+              type: array
+              items:
+                type: string
+                enum: [native_code, security]
+            reason:
+              type: string
+          additionalProperties: false
+      evidence_requirements:
+        type: object
+        description: >
+          When enabled, subagent reviews must include supporting evidence.
+          Responses without required evidence are rejected and re-dispatched.
+        properties:
+          require_quotes:
+            type: boolean
+            description: "Subagents must quote specific text from reviewed files."
+          require_line_numbers:
+            type: boolean
+            description: "Subagents must reference line numbers for every claim."
+          require_file_sizes:
+            type: boolean
+            description: "For audit assessments: report file sizes to prevent fabrication."
+        additionalProperties: false
+
+  # ─── Loop Configuration ─────────────────────────────────────────────
+
+  loop:
+    type: object
+    description: >
+      Only used when mode is 'loop'. Configures termination conditions,
+      autonomous behavior, and state persistence for long-running tasks.
+      The loop is for automation and longevity — ML training, monitoring,
+      long-running pipelines — not for short optimization bursts.
+    properties:
+      termination:
+        type: object
+        description: "OR conditions: whichever triggers first stops the loop."
+        properties:
+          metric_target:
+            type: [number, "null"]
+            description: "Stop when metric reaches this value."
+          max_iterations:
+            type: [integer, "null"]
+            minimum: 1
+            description: "Stop after N experiments."
+          time_budget_minutes:
+            type: [number, "null"]
+            minimum: 1
+            description: "Stop after N minutes of wall-clock time."
+        additionalProperties: false
+      behavior:
+        type: object
+        properties:
+          auto_commit_on_keep:
+            type: boolean
+            default: true
+            description: "Commit immediately when experiment passes all gates."
+          auto_revert_on_discard:
+            type: boolean
+            default: true
+            description: "git reset immediately when experiment fails."
+          pause_on_gate_failure:
+            type: boolean
+            default: false
+            description: "true = stop and ask user. false = revert and continue."
+          never_stop:
+            type: boolean
+            default: false
+            description: >
+              true = ignore termination conditions, run until externally
+              interrupted. This is the canonical ML training mode.
+        additionalProperties: false
+      resumable:
+        type: object
+        properties:
+          state_file:
+            type: string
+            default: ".eara-state.json"
+            description: >
+              Persists loop state (iteration count, last metric, last commit,
+              hypothesis history) for pause/resume across sessions.
+        additionalProperties: false
+
+  # ─── Logging ────────────────────────────────────────────────────────
+
+  logging:
+    type: object
+    description: >
+      Append-only results log. When auto_log is true, the framework
+      (not the agent) appends after every experiment. TSV format.
+    properties:
+      results_file:
+        type: string
+        default: "results.tsv"
+        description: "Path to the results log file."
+      auto_log:
+        type: boolean
+        default: true
+        description: "If true, logging happens automatically. If false, agent must log manually (discouraged)."
+      log_dispatches:
+        type: boolean
+        default: false
+        description: "If true, also log subagent dispatches (not just experiment results). Enabled at paranoid."
+      log_review_findings:
+        type: boolean
+        default: false
+        description: "If true, include reviewer findings in the log. Enabled at paranoid."
+
+  # ─── Boundaries ─────────────────────────────────────────────────────
+
+  boundaries:
+    type: object
+    description: >
+      For multi-project workspaces. Defines which files belong where.
+      Prevents architectural boundary violations.
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          required: [name, root]
+          properties:
+            name:
+              type: string
+            root:
+              type: string
+              description: "Path to project root."
+            allowed_file_patterns:
+              type: array
+              items:
+                type: string
+            forbidden_file_patterns:
+              type: array
+              items:
+                type: string
+            architectural_role:
+              type: string
+              description: "e.g., 'skills', 'agents', 'tools', 'runtime'."
+          additionalProperties: false
+      scope_gate:
+        type: boolean
+        default: false
+        description: "When true, every committed file is checked against boundary definitions."
+      cross_project_verification:
+        type: boolean
+        default: false
+        description: "When true, verify no artifact lands in the wrong project."
+
+  # ─── Framing ────────────────────────────────────────────────────────
+
+  framing:
+    type: object
+    description: >
+      Prevents the agent from misrepresenting the project. When the user
+      corrects a framing assumption, the correction protocol activates.
+    properties:
+      project_identity:
+        type: string
+        description: "What this project IS (canonical description)."
+      project_is_not:
+        type: array
+        items:
+          type: string
+        description: "Banned terms — things the project should never be called."
+      correction_protocol:
+        type: string
+        enum: [note, halt_and_audit]
+        description: >
+          note: record the correction, continue (minimal only).
+          halt_and_audit: stop, grep all outputs for old framing, fix every
+          instance, verify the fix, then resume (standard+).
+      verify_framing_on_commit:
+        type: boolean
+        default: false
+        description: "At paranoid: check that no committed content contains banned terms."
+
+  # ─── Source Files ───────────────────────────────────────────────────
+
+  source_files:
+    type: array
+    items:
+      type: string
+    description: "Glob patterns for files under modification in this session."
+
+# ─── Shared Definitions ────────────────────────────────────────────────
+
+$defs:
+  command_gate:
+    type: object
+    properties:
+      command:
+        type: string
+        description: "Shell command that must exit 0 to pass."
+      required:
+        type: boolean
+        description: "If true, failure blocks the experiment. If false, advisory only."
+    additionalProperties: false
+
+  subagent_gate:
+    type: object
+    properties:
+      type:
+        type: string
+        const: subagent
+      required:
+        type: boolean
+      prompt_template:
+        type: string
+        description: "Custom prompt for the verification subagent. null for default."
+    additionalProperties: false
+
+  reviewer:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      prompt_template:
+        type: string
+        description: "Custom prompt for this reviewer. null for default."
+    additionalProperties: false

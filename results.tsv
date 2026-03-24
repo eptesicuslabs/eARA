@@ -1,0 +1,10 @@
+timestamp	experiment_id	agent_type	status	metric_before	metric_after	gates_status	commit_hash	description	review_findings	duration_seconds
+2026-03-24T20:00:00Z	E001	implementer	keep	-	-	pass	-	Phase 1: spec files (schema, profiles, rationalizations, results-schema)	-	300
+2026-03-24T20:05:00Z	E002	implementer	keep	-	-	pass	-	Phase 2: protocol documents (bootstrap, loop, execution, review, gate, logging)	-	420
+2026-03-24T20:10:00Z	E003	implementer	keep	-	-	pass	-	Phase 3: example configs (minimal, standard, strict, paranoid, loop-training, loop-automation)	-	180
+2026-03-24T20:15:00Z	E004	implementer	keep	-	-	pass	-	program.md: consolidated Karpathy-style single-file agent contract	-	300
+2026-03-24T20:20:00Z	E005	orchestrator	keep	-	-	pass	-	Self-test gate run: 8 gates, 0 errors, 0 warnings	-	15
+2026-03-24T20:25:00Z	E005	spec_reviewer	keep	-	-	pass	-	Spec compliance review: PASS all 5 checks; marginal: eMCP V4 no rationalization	R14 added for platform driver review	95
+2026-03-24T20:30:00Z	E005	quality_reviewer	keep	-	-	pass	-	Quality review: 4 critical, 8 important, 3 gaps identified	Fixed C1-C4 (gate/review ambiguity, loop diagram, all-fail case, framing-vs-loop); fixed I1,I2,I6,I7,G1	134
+2026-03-24T20:35:00Z	E006	orchestrator	keep	-	-	pass	-	Post-review fixes: R14 added, gate/review clarified, PAUSED state added, framing override added, calibration expanded	-	120
+2026-03-24T20:40:00Z	E007	orchestrator	keep	-	-	pass	-	Final gate re-run: 8 gates, 0 errors, 0 warnings after all fixes	-	15

@@ -1,0 +1,17 @@
+# eARA Minimal Example
+# For: throwaway scripts, quick prototypes, exploratory work
+# Philosophy: "Does it build? Ship it."
+
+eara_version: "1.0"
+project: "Quick prototype"
+
+strictness: minimal
+mode: execution
+
+gates:
+  build:
+    command: "npm run build"
+    required: true
+
+source_files:
+  - "src/**/*.ts"

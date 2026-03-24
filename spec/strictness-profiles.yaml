@@ -1,0 +1,255 @@
+# eARA Strictness Profiles v1.0
+# Built-in profile definitions. When a user sets `strictness: standard`,
+# these defaults are loaded and optionally deep-merged with overrides.
+#
+# Profile hierarchy: minimal < standard < strict < paranoid
+# Each higher profile includes everything from lower profiles plus additions.
+
+profiles:
+
+  # ─── MINIMAL ──────────────────────────────────────────────────────
+  # For: throwaway scripts, quick prototypes, exploratory work
+  # Philosophy: "Does it build? Ship it."
+  # When to use: The cost of discipline exceeds the cost of bugs.
+
+  minimal:
+    gates:
+      build:
+        required: true
+      test:
+        required: false
+      lint:
+        required: false
+      spec_compliance:
+        required: false
+      no_regression:
+        required: false
+      test_before_ship:
+        enabled: false
+      post_merge_verification:
+        enabled: false
+    review:
+      default_policy: none
+      reviewers:
+        spec_compliance:
+          enabled: false
+        code_quality:
+          enabled: false
+        native_code:
+          enabled: false
+        security:
+          enabled: false
+        calibration:
+          enabled: false
+      evidence_requirements:
+        require_quotes: false
+        require_line_numbers: false
+        require_file_sizes: false
+    logging:
+      auto_log: false
+      log_dispatches: false
+      log_review_findings: false
+    boundaries:
+      scope_gate: false
+      cross_project_verification: false
+    framing:
+      correction_protocol: note
+      verify_framing_on_commit: false
+
+  # ─── STANDARD ─────────────────────────────────────────────────────
+  # For: production software engineering
+  # Philosophy: "Build, test, and verify independently before shipping."
+  # When to use: Default for any work that will be deployed or shared.
+  # Addresses: Basic quality. The RAMSpeed session operated at this level.
+
+  standard:
+    gates:
+      build:
+        required: true
+      test:
+        required: true
+      lint:
+        required: false    # advisory — flagged but not blocking
+      spec_compliance:
+        required: true
+      no_regression:
+        required: true
+      test_before_ship:
+        enabled: true       # new public surface must have tests
+        required: true
+      post_merge_verification:
+        enabled: false
+    review:
+      default_policy: spec_and_quality
+      reviewers:
+        spec_compliance:
+          enabled: true
+        code_quality:
+          enabled: true
+        native_code:
+          enabled: false    # not by default; use per_file_overrides
+        security:
+          enabled: false    # not by default; use per_file_overrides
+        calibration:
+          enabled: false
+      evidence_requirements:
+        require_quotes: false
+        require_line_numbers: false
+        require_file_sizes: false
+    logging:
+      auto_log: true
+      log_dispatches: false
+      log_review_findings: false
+    boundaries:
+      scope_gate: false
+      cross_project_verification: false
+    framing:
+      correction_protocol: halt_and_audit
+      verify_framing_on_commit: false
+
+  # ─── STRICT ───────────────────────────────────────────────────────
+  # For: high-stakes work, multi-project repos, security-sensitive code
+  # Philosophy: "Verify the verifiers. Enforce boundaries. Trust nothing incremental."
+  # When to use: When bugs have real-world consequences (infra, security, finance).
+  # Addresses: Every eMCP violation (post-merge, graduated review, evidence).
+
+  strict:
+    gates:
+      build:
+        required: true
+      test:
+        required: true
+      lint:
+        required: true     # now required, not advisory
+      spec_compliance:
+        required: true
+      no_regression:
+        required: true
+      test_before_ship:
+        enabled: true
+        required: true
+      post_merge_verification:
+        enabled: true       # full rebuild+test after merging parallel work
+        required: true
+    review:
+      default_policy: spec_and_quality
+      reviewers:
+        spec_compliance:
+          enabled: true
+        code_quality:
+          enabled: true
+        native_code:
+          enabled: true     # per-file: activated by per_file_overrides
+        security:
+          enabled: true     # per-file: activated by per_file_overrides
+        calibration:
+          enabled: true     # audit subagents are spot-checked
+          sample_size: 3
+      per_file_overrides:
+        # Default overrides for strict profile. Users can extend these.
+        - pattern: "**/platform/**"
+          policy: elevated
+          extra_reviewers: [native_code]
+          reason: "OS-level API calls require native code expertise."
+        - pattern: "**/security/**"
+          policy: elevated
+          extra_reviewers: [security]
+          reason: "Security boundaries require security expertise."
+        - pattern: "**/*.test.*"
+          policy: reduced
+          reason: "Test files get spec review only (not quality review)."
+      evidence_requirements:
+        require_quotes: true      # subagents must quote file content
+        require_line_numbers: true # subagents must reference line numbers
+        require_file_sizes: false
+    logging:
+      auto_log: true
+      log_dispatches: false
+      log_review_findings: false
+    boundaries:
+      scope_gate: true           # every committed file checked against boundaries
+      cross_project_verification: false
+    framing:
+      correction_protocol: halt_and_audit
+      verify_framing_on_commit: false
+
+  # ─── PARANOID ─────────────────────────────────────────────────────
+  # For: trust-nothing environments, compliance-critical work, new teams
+  # Philosophy: "Every claim needs evidence. Every boundary is enforced.
+  #              Every verifier is verified. Every commit is checked for framing."
+  # When to use: When the cost of ANY undetected error is unacceptable.
+  # Addresses: Every eSkill mistake (hallucinated audits, framing anchoring,
+  #            boundary violations, unverified assumptions).
+
+  paranoid:
+    gates:
+      build:
+        required: true
+      test:
+        required: true
+      lint:
+        required: true
+      spec_compliance:
+        required: true
+      no_regression:
+        required: true
+      test_before_ship:
+        enabled: true
+        required: true
+      post_merge_verification:
+        enabled: true
+        required: true
+    review:
+      default_policy: full       # spec + quality + domain-specific for ALL files
+      reviewers:
+        spec_compliance:
+          enabled: true
+        code_quality:
+          enabled: true
+        native_code:
+          enabled: true          # always, not just per-file
+        security:
+          enabled: true          # always, not just per-file
+        calibration:
+          enabled: true          # required, not optional
+          sample_size: 5         # larger sample for higher confidence
+      per_file_overrides:
+        - pattern: "**/*"
+          policy: elevated
+          extra_reviewers: [native_code, security]
+          reason: "Paranoid mode: everything gets all available reviewers."
+      evidence_requirements:
+        require_quotes: true
+        require_line_numbers: true
+        require_file_sizes: true  # prevents fabricated audit assessments
+    logging:
+      auto_log: true
+      log_dispatches: true       # log every subagent dispatch
+      log_review_findings: true  # include reviewer findings in the log
+    boundaries:
+      scope_gate: true
+      cross_project_verification: true  # verify across all project roots
+    framing:
+      correction_protocol: halt_and_audit
+      verify_framing_on_commit: true   # check banned terms at every commit
+
+# ─── Profile Resolution ──────────────────────────────────────────────
+#
+# When a user specifies:
+#   strictness:
+#     profile: standard
+#     overrides:
+#       review:
+#         per_file_overrides:
+#           - pattern: "**/drivers/*.ts"
+#             policy: elevated
+#             extra_reviewers: [native_code]
+#             reason: "Hardware driver code"
+#
+# The resolution process:
+# 1. Load the base profile (standard)
+# 2. Deep-merge the overrides into the base
+# 3. Arrays in overrides APPEND to base arrays (not replace)
+# 4. Scalars and booleans in overrides REPLACE base values
+#
+# This matches the eMCP policy-profiles.ts pattern (deepMerge).

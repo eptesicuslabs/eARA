@@ -1,0 +1,97 @@
+# eARA Paranoid Example
+# For: trust-nothing environments, compliance-critical work
+# Philosophy: "Every claim needs evidence. Every boundary is enforced.
+#              Every verifier is verified. Every commit is checked for framing."
+
+eara_version: "1.0"
+project: "eSkill platform-agnostic skill library"
+description: "82 skills across 10 plugins — multi-project workspace"
+
+strictness: paranoid
+mode: execution
+
+gates:
+  build:
+    command: "npm run build"
+    required: true
+  test:
+    command: "npm test"
+    required: true
+  lint:
+    command: "npm run lint"
+    required: true
+  spec_compliance:
+    type: subagent
+    required: true
+  no_regression:
+    command: "npm test -- --filter regression"
+    required: true
+  test_before_ship:
+    enabled: true
+    required: true
+  post_merge_verification:
+    enabled: true
+    required: true
+
+review:
+  default_policy: full
+  reviewers:
+    spec_compliance:
+      enabled: true
+    code_quality:
+      enabled: true
+    native_code:
+      enabled: true
+    security:
+      enabled: true
+    calibration:
+      enabled: true
+      sample_size: 5
+  evidence_requirements:
+    require_quotes: true
+    require_line_numbers: true
+    require_file_sizes: true
+
+logging:
+  results_file: "results.tsv"
+  auto_log: true
+  log_dispatches: true
+  log_review_findings: true
+
+boundaries:
+  projects:
+    - name: "eSkill"
+      root: "/Projects/eSkill"
+      allowed_file_patterns:
+        - "plugins/**/*.md"
+        - "plugins/**/*.yaml"
+      forbidden_file_patterns:
+        - "**/CLAUDE.md"
+        - "**/.claude-plugin/**"
+        - "**/agents/**"
+      architectural_role: "skills"
+    - name: "eAgent"
+      root: "/Projects/eCode"
+      allowed_file_patterns:
+        - "crates/**/*.rs"
+        - "config/**/*.yaml"
+      architectural_role: "runtime"
+    - name: "eMCP"
+      root: "/Projects/eMCP"
+      allowed_file_patterns:
+        - "packages/**/*.ts"
+      architectural_role: "tools"
+  scope_gate: true
+  cross_project_verification: true
+
+framing:
+  project_identity: "Platform-agnostic skill and workflow library"
+  project_is_not:
+    - "Claude Code plugin"
+    - "Claude Code marketplace"
+    - "Anthropic product"
+  correction_protocol: halt_and_audit
+  verify_framing_on_commit: true
+
+source_files:
+  - "plugins/**/*.md"

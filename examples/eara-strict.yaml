@@ -1,0 +1,86 @@
+# eARA Strict Example
+# For: high-stakes multi-project work (like the eMCP monorepo)
+# Philosophy: "Verify the verifiers. Enforce boundaries. Trust nothing incremental."
+
+eara_version: "1.0"
+project: "eMCP server improvements"
+description: "34-server MCP monorepo: new servers, unification, security, tests"
+
+strictness:
+  profile: strict
+  overrides:
+    review:
+      per_file_overrides:
+        - pattern: "**/platform/*.ts"
+          policy: elevated
+          extra_reviewers: [native_code]
+          reason: "OS-level API calls (P/Invoke, child_process, native bindings)"
+        - pattern: "**/security*.ts"
+          policy: elevated
+          extra_reviewers: [security]
+          reason: "Security gate enforcement code"
+        - pattern: "**/*.test.ts"
+          policy: reduced
+          reason: "Test files: spec review only"
+
+mode: execution
+
+gates:
+  build:
+    command: "pnpm build"
+    required: true
+  test:
+    command: "pnpm test"
+    required: true
+  lint:
+    command: "pnpm lint"
+    required: true
+  spec_compliance:
+    type: subagent
+    required: true
+  no_regression:
+    command: "pnpm test --passWithNoTests"
+    required: true
+  test_before_ship:
+    enabled: true
+    required: true
+  post_merge_verification:
+    enabled: true
+    required: true
+
+review:
+  default_policy: spec_and_quality
+  reviewers:
+    calibration:
+      enabled: true
+      sample_size: 3
+  evidence_requirements:
+    require_quotes: true
+    require_line_numbers: true
+
+logging:
+  results_file: "results.tsv"
+  auto_log: true
+
+boundaries:
+  projects:
+    - name: "eMCP"
+      root: "."
+      allowed_file_patterns:
+        - "packages/**/*.ts"
+        - "packages/**/*.json"
+      forbidden_file_patterns:
+        - "**/CLAUDE.md"
+        - "**/.claude-plugin/**"
+      architectural_role: "tools"
+  scope_gate: true
+
+framing:
+  project_identity: "Local-only MCP server monorepo"
+  project_is_not:
+    - "cloud service"
+    - "SaaS product"
+  correction_protocol: halt_and_audit
+
+source_files:
+  - "packages/*/src/**/*.ts"

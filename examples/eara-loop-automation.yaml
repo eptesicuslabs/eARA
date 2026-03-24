@@ -1,0 +1,101 @@
+# eARA Loop Example: Long-Running Automation
+# The agent monitors a system, detects issues, applies fixes, and verifies.
+# Runs indefinitely until the system stabilizes or is interrupted.
+
+eara_version: "1.0"
+project: "API performance optimization"
+description: "Continuously monitor and optimize API endpoint performance under load"
+
+strictness:
+  profile: strict
+  overrides:
+    review:
+      per_file_overrides:
+        - pattern: "**/middleware/**"
+          policy: elevated
+          extra_reviewers: [security]
+          reason: "Middleware changes affect all request paths"
+
+mode: loop
+
+metric:
+  name: "p95_latency_ms"
+  direction: lower
+  collect_command: "curl -s http://localhost:9090/metrics | grep 'http_request_duration_p95' | awk '{print $2}'"
+  baseline: null
+  target: 50  # target: p95 under 50ms
+
+gates:
+  build:
+    command: "go build ./..."
+    required: true
+  test:
+    command: "go test ./... -count=1"
+    required: true
+  lint:
+    command: "golangci-lint run"
+    required: true
+  no_regression:
+    command: "go test -bench=BenchmarkHandlers -benchtime=5s ./src/api/ | python scripts/check_regression.py"
+    required: true
+  test_before_ship:
+    enabled: true
+    required: true
+  post_merge_verification:
+    enabled: true
+    required: true
+  custom_gates:
+    - name: throughput_stable
+      command: "python scripts/check_throughput.py --min-rps 1000"
+      required: true
+      description: "Throughput must not drop below 1000 requests/sec"
+    - name: no_goroutine_leaks
+      command: "python scripts/check_goroutines.py --max-growth 5"
+      required: true
+      description: "Goroutine count must not grow by more than 5% under sustained load"
+    - name: memory_stable
+      command: "python scripts/check_memory.py --max-rss-growth-mb 10"
+      required: true
+      description: "RSS growth must not exceed 10MB per hour under load"
+
+review:
+  default_policy: spec_and_quality
+  reviewers:
+    calibration:
+      enabled: true
+      sample_size: 3
+  evidence_requirements:
+    require_quotes: true
+    require_line_numbers: true
+
+loop:
+  termination:
+    metric_target: 50          # stop when p95 < 50ms
+    max_iterations: 100        # safety limit: 100 experiments max
+    time_budget_minutes: 480   # 8-hour budget
+  behavior:
+    auto_commit_on_keep: true
+    auto_revert_on_discard: true
+    pause_on_gate_failure: false
+    never_stop: false          # respect termination conditions
+  resumable:
+    state_file: ".eara-state.json"
+
+logging:
+  results_file: "results.tsv"
+  auto_log: true
+
+boundaries:
+  projects:
+    - name: "API"
+      root: "."
+      allowed_file_patterns:
+        - "src/**/*.go"
+        - "config/**/*.yaml"
+        - "scripts/**/*.py"
+  scope_gate: true
+
+source_files:
+  - "src/api/**/*.go"
+  - "src/middleware/**/*.go"
+  - "config/*.yaml"

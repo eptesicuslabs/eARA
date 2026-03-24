@@ -1,0 +1,44 @@
+# eARA Standard Example
+# For: production software engineering
+# Philosophy: "Build, test, and verify independently before shipping."
+
+eara_version: "1.0"
+project: "RAMSpeed algorithmic improvements"
+description: "7 improvements to the memory optimization pipeline"
+
+strictness: standard
+mode: execution
+
+gates:
+  build:
+    command: "dotnet build src/RAMSpeed/RAMSpeed.csproj -o /tmp/ramspeed-build"
+    required: true
+  test:
+    command: "dotnet test tests/RAMSpeed.Tests/RAMSpeed.Tests.csproj"
+    required: true
+  spec_compliance:
+    type: subagent
+    required: true
+  no_regression:
+    command: "dotnet test tests/RAMSpeed.Tests --filter Category=Regression"
+    required: true
+  test_before_ship:
+    enabled: true
+    required: true
+  custom_gates:
+    - name: backward_compatible
+      command: "dotnet test tests/RAMSpeed.Tests --filter Category=Compatibility"
+      required: true
+      description: "Default settings must preserve original behavior"
+
+review:
+  default_policy: spec_and_quality
+
+logging:
+  results_file: "docs/results.tsv"
+  auto_log: true
+
+source_files:
+  - "src/RAMSpeed/Services/MemoryOptimizer.cs"
+  - "src/RAMSpeed/Services/MemoryMonitor.cs"
+  - "src/RAMSpeed/Models/Settings.cs"

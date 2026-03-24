@@ -1,0 +1,64 @@
+# eARA Loop Example: ML Training
+# The canonical loop use case. The agent trains a model autonomously,
+# adjusting hyperparameters, architecture, and data pipeline. Runs for
+# hours or days. Never stops until interrupted.
+
+eara_version: "1.0"
+project: "Language model fine-tuning"
+description: "Fine-tune a language model on domain-specific data"
+
+strictness: standard
+mode: loop
+
+metric:
+  name: "val_loss"
+  direction: lower
+  collect_command: "python scripts/eval.py --checkpoint latest --split val | grep 'val_loss:' | awk '{print $2}'"
+  baseline: null    # measured at session start
+  target: null      # no target — run until interrupted
+
+gates:
+  build:
+    command: "python -c 'import torch; import model; print(\"ok\")'"
+    required: true
+  test:
+    command: "pytest tests/ -x -q"
+    required: true
+  no_regression:
+    command: "python scripts/eval.py --checkpoint latest --split test --check-no-regression"
+    required: true
+  custom_gates:
+    - name: no_nan
+      command: "python scripts/check_nan.py --checkpoint latest"
+      required: true
+      description: "No NaN values in model weights or gradients"
+    - name: memory_budget
+      command: "python scripts/check_memory.py --max-gb 24"
+      required: true
+      description: "Peak GPU memory must stay under 24GB"
+
+review:
+  default_policy: spec_and_quality
+
+loop:
+  termination:
+    metric_target: null     # no target — run until interrupted
+    max_iterations: null    # no limit
+    time_budget_minutes: null  # no limit
+  behavior:
+    auto_commit_on_keep: true
+    auto_revert_on_discard: true
+    pause_on_gate_failure: false
+    never_stop: true        # THE KEY SETTING: run until externally interrupted
+  resumable:
+    state_file: ".eara-state.json"
+
+logging:
+  results_file: "experiments/results.tsv"
+  auto_log: true
+
+source_files:
+  - "model/**/*.py"
+  - "config/*.yaml"
+  - "scripts/train.py"
+  - "data/preprocessing.py"

@@ -1,0 +1,126 @@
+# eARA Results Log Schema v1.0
+#
+# Defines the structure of results.tsv — the append-only experiment log.
+# TSV format: one row per experiment, tab-separated, human-readable.
+#
+# Why TSV (not CSV or JSON):
+# - Append-friendly: just add a line (JSON requires balanced brackets)
+# - Human-readable: opens cleanly in any text editor or spreadsheet
+# - No escaping needed for most content (unlike CSV with commas in descriptions)
+# - Matches the convention established in the RAMSpeed case study
+
+format: tsv
+encoding: utf-8
+header_row: true
+append_only: true
+
+# ─── Column Definitions ────────────────────────────────────────────
+
+columns:
+
+  - name: timestamp
+    type: datetime
+    format: "ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)"
+    description: "When the experiment completed (keep or discard decision made)."
+    required: true
+
+  - name: experiment_id
+    type: string
+    format: "E{iteration_number} (e.g., E001, E002, E042)"
+    description: "Sequential experiment identifier within this session."
+    required: true
+
+  - name: agent_type
+    type: string
+    enum: [implementer, spec_reviewer, quality_reviewer, native_reviewer, security_reviewer, audit, loop_iteration, orchestrator]
+    description: >
+      What kind of agent produced this entry.
+      implementer: wrote the code.
+      *_reviewer: verified the code.
+      orchestrator: session-level event (framing gate, boundary violation, session decision).
+      audit: assessed quality/state.
+      loop_iteration: one pass of the loop state machine.
+    required: true
+
+  - name: status
+    type: string
+    enum: [keep, discard, blocked, error, gate_fail]
+    description: >
+      keep: experiment passed all gates, committed.
+      discard: experiment failed metric or gates, reverted.
+      blocked: experiment could not proceed (missing dependency, etc.).
+      error: unexpected failure (build crash, command timeout, etc.).
+      gate_fail: specific gate failed (see gates_status for which one).
+    required: true
+
+  - name: metric_before
+    type: number_or_null
+    description: >
+      Metric value before this experiment. null if no metric is defined
+      (execution mode with direction: pass) or if this is the first experiment.
+    required: false
+
+  - name: metric_after
+    type: number_or_null
+    description: >
+      Metric value after this experiment. null if the experiment was
+      discarded before measurement or if no metric is defined.
+    required: false
+
+  - name: gates_status
+    type: string
+    format: "pass | fail:{gate_name} | skip"
+    description: >
+      Composite gate result.
+      pass: all required gates passed.
+      fail:build: the build gate failed.
+      fail:test: the test gate failed.
+      fail:lint: the lint gate failed.
+      fail:spec_compliance: the spec reviewer rejected.
+      fail:{custom_gate_name}: a custom gate failed.
+      skip: gates were not checked (e.g., minimal profile with tests off).
+    required: true
+
+  - name: commit_hash
+    type: string_or_null
+    format: "7-character git short hash"
+    description: "Commit hash if the experiment was kept. null if discarded."
+    required: false
+
+  - name: description
+    type: string
+    description: >
+      What was attempted. Should be specific enough to understand the
+      experiment without reading the code. One line, no tabs.
+    required: true
+
+  - name: review_findings
+    type: string_or_null
+    description: >
+      Issues found by reviewers, if any. Only populated when
+      logging.log_review_findings is true (paranoid profile).
+      Semicolon-separated if multiple findings.
+    required: false
+
+  - name: duration_seconds
+    type: number
+    description: >
+      Wall-clock time from experiment start to decision (keep/discard).
+      Includes build, test, review, and measurement time.
+    required: true
+
+# ─── Example ────────────────────────────────────────────────────────
+#
+# timestamp                  experiment_id  agent_type      status   metric_before  metric_after  gates_status  commit_hash  description                                          review_findings  duration_seconds
+# 2026-03-24T14:32:01Z       E001           implementer     keep     -              -             pass          3def8ae      settings: 5 new properties with validation clamping  -                45
+# 2026-03-24T14:35:22Z       E001           spec_reviewer   keep     -              -             pass          -            spec review: no issues found                         -                12
+# 2026-03-24T14:38:15Z       E001           quality_reviewer keep    -              -             pass          -            quality review: minor rename suggestion               rename x to y   8
+# 2026-03-24T15:01:00Z       E002           loop_iteration  keep     120            95            pass          a1b3bee      switched to streaming JSON encoder                    -                180
+# 2026-03-24T15:04:30Z       E003           loop_iteration  discard  95             98            fail:test     -            tried connection pool tuning (throughput regressed)    -                210
+
+# ─── Initialization ─────────────────────────────────────────────────
+#
+# When auto_log is true, the agent creates the results file at session
+# start if it does not exist, writing only the header row. If the file
+# already exists (resume scenario), the agent reads the last entry to
+# determine the current experiment_id and metric state.

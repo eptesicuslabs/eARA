@@ -1,0 +1,157 @@
+# eARA Rationalizations Table v1.0
+#
+# If an agent catches itself thinking any of these thoughts, it must STOP.
+# These are not warnings. They are mandatory halt signals.
+#
+# The rationalizations are loaded at session start and treated as pattern
+# matches against the agent's internal reasoning. A match means the agent
+# is about to make a known mistake.
+
+rationalizations:
+
+  # ─── Original eARA (from program.md) ────────────────────────────
+
+  - id: R01
+    thought: "This change is simple enough that I do not need a reviewer."
+    why_wrong: >
+      Simple changes have caused the worst bugs. The perceived simplicity
+      is itself the blind spot — the agent has not considered what it
+      has not considered.
+    source: "eARA original"
+    applies_at: [minimal, standard, strict, paranoid]
+
+  - id: R02
+    thought: "I already read the codebase."
+    why_wrong: >
+      You read it in your context window. You have blind spots you
+      cannot see. The file may have changed since you read it. Another
+      subagent may have modified it. Read it again.
+    source: "eARA original"
+    applies_at: [minimal, standard, strict, paranoid]
+
+  - id: R03
+    thought: "The build passing will catch everything."
+    why_wrong: >
+      The build catches syntax errors. It does not catch logic errors,
+      spec drift, or architectural violations. A build that passes is
+      necessary but not sufficient.
+    source: "eARA original"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R04
+    thought: "These subagents are overkill for this change."
+    why_wrong: >
+      The protocol exists because previous agents thought the same thing
+      and shipped broken code. The 60% review compliance rate in the eMCP
+      session produced a 60% preventable bug rate. This is not theoretical.
+    source: "eARA original"
+    applies_at: [standard, strict, paranoid]
+
+  # ─── From eMCP session ──────────────────────────────────────────
+
+  - id: R05
+    thought: "It's a port from working code, so I don't need to review the adaptation."
+    why_wrong: >
+      Ports introduce new integration boundaries, new config handling,
+      and new error paths. The original code worked in its original
+      context. The adapted code works in a different context that the
+      implementing agent has not fully internalized.
+    source: "eMCP session — Violation 3 (eGrep server)"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R06
+    thought: "This is just a test file, it doesn't need review."
+    why_wrong: >
+      Test files that assert wrong values create false confidence. A test
+      that expects 5 tools when there are 6 will pass silently — then fail
+      when someone adds tools, creating a debugging puzzle far from the
+      actual source of the problem.
+    source: "eMCP session — Violation 2 (worktree tool count mismatch)"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R07
+    thought: "I can skip the test-before-ship gate because the code builds."
+    why_wrong: >
+      Unverified code is untrusted code. Build success proves syntax, not
+      behavior. Zero-test commits are equivalent to untested experiments.
+      The eMCP session shipped 17 tools with zero tests — the security
+      gates could have been silently broken for the entire period.
+    source: "eMCP session — Violation 1 (computer-use shipped untested)"
+    applies_at: [standard, strict, paranoid]
+
+  # ─── From eSkill session ────────────────────────────────────────
+
+  - id: R08
+    thought: "The audit subagent's report is thorough, so I can trust it."
+    why_wrong: >
+      Audit subagents hallucinate with the same confidence as implementation
+      subagents. The eSkill session's audit subagent rated 6 detailed,
+      multi-step skills as "2/5 placeholder stubs" — every rating was
+      fabricated. Verify a sample independently before trusting any audit.
+    source: "eSkill session — Mistake 1 (hallucinated quality ratings)"
+    applies_at: [strict, paranoid]
+
+  - id: R09
+    thought: "I know the state of the adjacent projects from earlier context."
+    why_wrong: >
+      You read about them. You did not verify their current state. The
+      eSkill session recommended "open-source eMCP" when eMCP was already
+      open-source, and tried to create an eAgent directory when eAgent
+      already existed under the name eCode. Check before recommending.
+    source: "eSkill session — Mistake 5 (unverified project state)"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R10
+    thought: "The user already corrected this framing, so I have internalized it."
+    why_wrong: >
+      Your context window still contains the old framing from files read
+      earlier in the session. The correction is in memory but the anchor
+      is in context — and context is a stronger signal. Fresh subagents
+      dispatched after the correction carry the new framing naturally.
+      You do not. Grep and fix every instance.
+    source: "eSkill session — Mistake 2 (context anchoring)"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R11
+    thought: "Platform-specific config files are part of the project."
+    why_wrong: >
+      Platform-specific artifacts belong in platform-specific repositories.
+      A platform-agnostic project must not contain platform-specific config
+      files. The eSkill session committed CLAUDE.md and marketplace.json
+      to a platform-agnostic skill library.
+    source: "eSkill session — Mistake 3 (wrong files in repo)"
+    applies_at: [strict, paranoid]
+
+  - id: R12
+    thought: "Existing files of this type are here, so new ones go here too."
+    why_wrong: >
+      Existing patterns may be wrong. Verify architectural boundaries
+      before following a pattern. The eSkill session created 5 new agent
+      definitions in the skill repo because 6 agent files already existed
+      there — but agent definitions belong in the runtime layer, not the
+      skill layer.
+    source: "eSkill session — Mistake 4 (agents in wrong layer)"
+    applies_at: [strict, paranoid]
+
+  - id: R13
+    thought: "The metric improved, so the change is good."
+    why_wrong: >
+      Metric improvement without gate verification means you may have
+      broken something else. The test coverage example shows: coverage
+      can increase from trivial tests that exercise no real behavior.
+      Always check gates after measuring. The metric tells you IF you
+      improved. The gates tell you WHETHER you broke something.
+    source: "loop-examples.md — coverage example"
+    applies_at: [minimal, standard, strict, paranoid]
+
+  - id: R14
+    thought: "This is platform code but standard review is enough."
+    why_wrong: >
+      Platform-specific code that calls OS APIs (P/Invoke, FFI, native
+      bindings) has a distinct class of bugs: sign/unsigned mismatches,
+      pointer lifetime errors, platform-specific assumptions. The eMCP
+      session had a uint/int mismatch in mouse_event that broke scroll-down
+      on Windows — a classic P/Invoke bug that any native code reviewer
+      would have caught. Standard review does not have this expertise.
+    source: "eMCP session — Violation 4 (platform driver review insufficient)"
+    applies_at: [strict, paranoid]
