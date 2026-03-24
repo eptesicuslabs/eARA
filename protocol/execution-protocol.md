@@ -99,7 +99,15 @@ later." The experiment either passes completely or it does not count.
 
 ### 6. COMMIT
 
-If KEEP:
+**Before committing, produce the REVIEW GATE VERIFICATION record** (see
+`review-protocol.md`, section "Commit Gate: Mandatory Review Receipt
+Verification"). This is not optional. The commit is BLOCKED until the
+record is produced and all required reviewers have returned PASS.
+
+If the record shows BLOCKED: fix issues, re-dispatch failed reviewers,
+and produce a new record. Do not commit.
+
+If KEEP and gate decision is COMMIT:
 - Commit atomically with a descriptive message.
 - One commit per logical unit of work (not bulk commits at the end).
 - The commit message should describe what changed and why.

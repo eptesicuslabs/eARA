@@ -41,6 +41,10 @@ profiles:
           enabled: false
         calibration:
           enabled: false
+      commit_gate:
+        enabled: false       # minimal: no review gate
+        block_on_missing_reviewer: false
+        require_all_returned: false
       evidence_requirements:
         require_quotes: false
         require_line_numbers: false
@@ -92,6 +96,10 @@ profiles:
           enabled: false    # not by default; use per_file_overrides
         calibration:
           enabled: false
+      commit_gate:
+        enabled: true        # v1.1: mandatory review receipt before commit
+        block_on_missing_reviewer: true
+        require_all_returned: true
       evidence_requirements:
         require_quotes: false
         require_line_numbers: false
@@ -158,6 +166,10 @@ profiles:
         - pattern: "**/*.test.*"
           policy: reduced
           reason: "Test files get spec review only (not quality review)."
+      commit_gate:
+        enabled: true             # v1.1: mandatory review receipt before commit
+        block_on_missing_reviewer: true
+        require_all_returned: true
       evidence_requirements:
         require_quotes: true      # subagents must quote file content
         require_line_numbers: true # subagents must reference line numbers
@@ -218,6 +230,10 @@ profiles:
           policy: elevated
           extra_reviewers: [native_code, security]
           reason: "Paranoid mode: everything gets all available reviewers."
+      commit_gate:
+        enabled: true             # v1.1: mandatory review receipt before commit
+        block_on_missing_reviewer: true
+        require_all_returned: true
       evidence_requirements:
         require_quotes: true
         require_line_numbers: true

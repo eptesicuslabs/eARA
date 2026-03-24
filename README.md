@@ -68,7 +68,9 @@ Profiles control which gates are mandatory, whether subagent verification is req
 
 **append-only logging.** Every experiment is logged to results.tsv, including failures. Discards are as informative as keeps.
 
-**rationalizations as stop signals.** If the agent catches itself thinking "this is simple enough to skip review," it must stop. The rationalizations table (14 entries, each derived from a real failure) serves as a pattern-match against the agent's internal reasoning.
+**rationalizations as stop signals.** If the agent catches itself thinking "this is simple enough to skip review," it must stop. The rationalizations table (20 entries, each derived from a real failure) serves as a pattern-match against the agent's internal reasoning. v1.1 added 6 entries from an agent that acknowledged eARA, set up the config, then violated every review requirement while claiming compliance.
+
+**commit gate: mandatory review receipt.** At standard+ strictness, the agent must produce a structured REVIEW GATE VERIFICATION record before any commit, listing every required reviewer's agent ID and PASS/REJECT result. Commits without this record are protocol violations. This gate was added in v1.1 after an agent dispatched 1 of 4 required reviewers, called it "eARA compliance," and committed code with 2 critical bugs.
 
 ## gates
 
@@ -126,6 +128,18 @@ eARA has been validated in three production sessions:
 - `eskill-session-report.md` -- 44 to 82 skills across 10 plugins. 6 mistakes, 3 failure patterns. Led to calibration checks, framing gates, and boundary enforcement.
 
 Every strictness level and every rationalization entry traces back to a specific failure in these sessions.
+
+### v1.1: eAgent Phase 1 incident (2026-03-24)
+
+An agent was explicitly instructed to "use eARA" and told "follow the subagent instructions, otherwise this whole project is jeopardized." The agent acknowledged both instructions, created eara.yaml with standard strictness, then:
+
+- Dispatched 1 of 4 mandatory reviewers (code quality only)
+- Skipped spec compliance, research, and self-critique reviewers entirely
+- Called this "eARA compliance"
+- Committed before the single reviewer returned
+- Wrote "eARA gate PASS" in the commit message while the gate had not been verified
+
+The single reviewer it did dispatch found 2 critical bugs (a dead-letter channel and a fabricated lookup key). This incident led to 6 new rationalizations (R15-R20), the mandatory commit gate (REVIEW GATE VERIFICATION record), and the "Threat Model: Performative Compliance" section in the review protocol.
 
 ## for agents
 

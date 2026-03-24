@@ -62,6 +62,10 @@ FOR EACH task:
                   it is a review dispatch, not a separate gate run.
   5. DECIDE     — Binary: KEEP (all gates pass + reviewers approve)
                          or DISCARD (any failure). No middle ground.
+  5b. COMMIT GATE — Produce REVIEW GATE VERIFICATION record (Section 5b).
+                  List every required reviewer, agent ID, PASS/REJECT.
+                  All required reviewers dispatched AND returned PASS.
+                  If ANY is missing, not returned, or REJECT: BLOCKED.
   6. COMMIT     — Atomic commit. One per logical unit. Descriptive message.
   7. LOG        — Append to results.tsv (Section 6).
   8. POST-MERGE — If parallel work was merged: re-run ALL gates from
@@ -318,6 +322,56 @@ These are not warnings. They are mandatory halt signals.
 | R12 | "Existing files of this type are here, so new ones go here too." | Existing patterns may be wrong. Verify boundaries before following patterns. |
 | R13 | "The metric improved, so the change is good." | Improvement without gate verification means you may have broken something else. |
 | R14 | "This is platform code but standard review is enough." | Platform/native code has distinct bugs (sign/unsigned, pointer lifetime). Standard review lacks this expertise. |
+| R15 | "I dispatched one reviewer, that counts as eARA compliance." | Standard requires BOTH spec compliance AND code quality review. One reviewer is a protocol violation, not partial credit. |
+| R16 | "I set up eara.yaml, so I am following eARA." | Creating the config is step 1 of 9. Writing eara.yaml then ignoring its contents is worse than not having it — it creates a false audit trail. |
+| R17 | "The user told me to use eARA but I know a faster way." | "Use eARA" is a direct instruction, not a suggestion. Substituting your own process is insubordination, not efficiency. |
+| R18 | "I will run the reviewers after I commit, to save time." | Review happens BEFORE commit. A commit is a declaration the work is verified. Committing then reviewing means you declared verification you did not have. |
+| R19 | "Tests pass, so the implementation is correct." | Tests verify what they test, not what they do not test. 263 passing tests and 2 critical bugs (dead-letter channel, fabricated lookup key). Passing tests are necessary, not sufficient. |
+| R20 | "I acknowledged the protocol, so I must be following it." | Acknowledgment is not compliance. Measured by what you DO (dispatch all reviewers, wait for results, gate on outcomes), not what you SAY. |
+
+---
+
+## 5b. Commit Gate: Mandatory Review Receipt (v1.1)
+
+**Applies at: standard, strict, paranoid. Cannot be skipped.**
+
+Before ANY commit, produce this verification record:
+
+```
+REVIEW GATE VERIFICATION
+  Strictness:                    {resolved level}
+  Required reviewers:            {from profile}
+  ──────────────────────────────────────────────
+  Spec Compliance Reviewer:      {PASS / REJECT / NOT_DISPATCHED}
+    Agent ID:                    {id or "MISSING"}
+  Code Quality Reviewer:         {PASS / REJECT / NOT_DISPATCHED}
+    Agent ID:                    {id or "MISSING"}
+  Native Code Reviewer:          {PASS / REJECT / NOT_DISPATCHED / N/A}
+    Agent ID:                    {id or "N/A"}
+  Security Reviewer:             {PASS / REJECT / NOT_DISPATCHED / N/A}
+    Agent ID:                    {id or "N/A"}
+  ──────────────────────────────────────────────
+  All required reviewers dispatched:  {YES / NO}
+  All required reviewers returned:    {YES / NO}
+  Any REJECT results:                 {YES / NO}
+  Gate decision:                      {COMMIT / BLOCKED}
+```
+
+**Rules:**
+- ANY required reviewer NOT_DISPATCHED or MISSING → BLOCKED.
+- ANY required reviewer not yet returned → BLOCKED. Dispatching is not credit. Receiving PASS is credit.
+- ANY required reviewer REJECT → BLOCKED. Fix, re-dispatch, re-verify.
+- The record must appear BEFORE the commit command, not after.
+
+**Threat model: performative compliance.** The agent is biased toward
+completion, self-consistency, and efficiency. These biases produce: skipping
+reviewers to commit faster, dispatching 1 of N and calling it compliance,
+committing before reviewers return, writing "eARA compliant" without
+checking. The commit gate makes performative compliance impossible — you
+cannot produce the record without actually dispatching and receiving results
+from every required reviewer. If you find yourself writing "eARA compliant"
+anywhere, stop and verify you actually dispatched every required agent and
+received every required result.
 
 ---
 

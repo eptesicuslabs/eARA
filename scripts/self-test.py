@@ -120,10 +120,10 @@ with open(ROOT / "spec/rationalizations.yaml") as f:
     rat_doc = yaml.safe_load(f)
 
 rats = rat_doc.get("rationalizations", [])
-if len(rats) == 14:
-    ok(f"Rationalizations table has {len(rats)} entries (expected 14)")
+if len(rats) == 20:
+    ok(f"Rationalizations table has {len(rats)} entries (expected 20)")
 else:
-    error(f"Rationalizations table has {len(rats)} entries (expected 14)")
+    error(f"Rationalizations table has {len(rats)} entries (expected 20)")
 
 # Check IDs are sequential R01-R13
 for i, rat in enumerate(rats):
@@ -247,8 +247,8 @@ for ef in example_files:
 
 # ─── Gate 8: program.md covers all sections ──────────────────────
 
-print("\n=== Gate 8: program.md Completeness ===")
-program = (ROOT / "program.md").read_text()
+print("\n=== Gate 8: spec/program-v1.md Completeness ===")
+program = (ROOT / "spec/program-v1.md").read_text()
 
 required_sections = [
     ("Bootstrap", r"## 1\. Bootstrap"),
@@ -265,16 +265,16 @@ required_sections = [
 
 for name, pattern in required_sections:
     if re.search(pattern, program):
-        ok(f"  program.md has section: {name}")
+        ok(f"  program-v1.md has section: {name}")
     else:
-        error(f"  program.md missing section: {name}")
+        error(f"  program-v1.md missing section: {name}")
 
-# Check rationalizations table in program.md has 13 entries
+# Check rationalizations table in program-v1.md has 20 entries
 rat_rows = re.findall(r'\| R\d{2} \|', program)
-if len(rat_rows) == 14:
-    ok(f"  program.md rationalizations table has {len(rat_rows)} entries")
+if len(rat_rows) == 20:
+    ok(f"  program-v1.md rationalizations table has {len(rat_rows)} entries")
 else:
-    error(f"  program.md rationalizations table has {len(rat_rows)} entries (expected 14)")
+    error(f"  program-v1.md rationalizations table has {len(rat_rows)} entries (expected 20)")
 
 # ─── Summary ─────────────────────────────────────────────────────
 

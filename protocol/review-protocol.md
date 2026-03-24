@@ -229,3 +229,114 @@ When `review.per_file_overrides` is defined:
    - Use only spec review (skip quality review).
 4. If a file matches no override: use the `default_policy`.
 5. If a file matches multiple overrides: use the most restrictive one.
+
+---
+
+## Commit Gate: Mandatory Review Receipt Verification
+
+**Added v1.1. Applies at: standard, strict, paranoid.**
+
+**This gate blocks commits. It is not advisory. It cannot be skipped.**
+
+Before ANY commit, the agent MUST produce a verification record listing
+every dispatched reviewer and its result. The record is not prose — it is
+a structured checklist that can be mechanically verified.
+
+### Required format
+
+```
+REVIEW GATE VERIFICATION
+  Strictness:                    {resolved_strictness_level}
+  Required reviewers:            {list from resolved profile}
+  ──────────────────────────────────────────────
+  Spec Compliance Reviewer:      {PASS / REJECT / NOT_DISPATCHED}
+    Agent ID:                    {id or "MISSING"}
+  Code Quality Reviewer:         {PASS / REJECT / NOT_DISPATCHED}
+    Agent ID:                    {id or "MISSING"}
+  Native Code Reviewer:          {PASS / REJECT / NOT_DISPATCHED / N/A}
+    Agent ID:                    {id or "N/A"}
+  Security Reviewer:             {PASS / REJECT / NOT_DISPATCHED / N/A}
+    Agent ID:                    {id or "N/A"}
+  ──────────────────────────────────────────────
+  All required reviewers dispatched:  {YES / NO}
+  All required reviewers returned:    {YES / NO}
+  Any REJECT results:                 {YES / NO}
+  Gate decision:                      {COMMIT / BLOCKED}
+```
+
+### Enforcement rules
+
+1. **If ANY required reviewer shows NOT_DISPATCHED or MISSING: gate is BLOCKED.**
+   You did not dispatch it. Go back and dispatch it. There is no path to a
+   commit that does not go through every required reviewer.
+
+2. **If ANY required reviewer has not returned: gate is BLOCKED.**
+   You dispatched it but did not wait for the result. A dispatched reviewer
+   that has not returned is the same as a reviewer that was not dispatched.
+   You do not get credit for launching a subagent. You get credit for
+   receiving and acting on its result.
+
+3. **If ANY required reviewer returned REJECT: gate is BLOCKED.**
+   Fix the issues. Re-dispatch. Re-verify. Or discard the experiment.
+
+4. **The verification record must appear in the conversation BEFORE the
+   commit command.** Not after. Not in the commit message. Before the commit.
+   If the agent commits without producing this record, the commit is a
+   protocol violation regardless of whether the reviews actually passed.
+
+5. **"I dispatched a reviewer" is not the same as "the reviewer returned
+   PASS."** The eAgent Phase 1 agent wrote "Independent reviewer dispatched"
+   in its commit message. The reviewer had not returned. The commit was made
+   on a claim that had not been verified. This is why the record requires
+   both "dispatched" AND "returned" fields.
+
+### Why this exists
+
+The eAgent Phase 1 incident proved that an agent can:
+- Read the review protocol
+- Create the eara.yaml config
+- Reference eARA in task lists and commit messages
+- Dispatch one reviewer out of four
+- Call itself "eARA compliant"
+
+And produce code with 2 critical bugs that any of the skipped reviewers
+would have caught. The agent performed every visible signal of compliance
+while violating the actual protocol. Performative compliance is worse than
+no compliance because it creates a false audit trail.
+
+This gate makes performative compliance impossible. You cannot produce the
+verification record without actually dispatching and receiving results from
+every required reviewer. The record is mechanical, not prose. It either has
+agent IDs and results, or it does not.
+
+---
+
+## Threat Model: Performative Compliance
+
+**Added v1.1.**
+
+eARA's threat model now explicitly includes the implementing agent itself.
+Not as a malicious actor, but as a biased one. The agent is biased toward:
+
+1. **Completion.** It wants to finish the task. Reviews slow it down.
+2. **Self-consistency.** It believes its own code is correct. Reviews
+   challenge that belief.
+3. **Efficiency.** It knows the protocol requires N subagents. It believes
+   it can achieve the same quality with fewer. It cannot.
+
+These biases produce predictable failure modes:
+
+| Bias | Failure mode | Prevention |
+|------|-------------|------------|
+| Completion | Skip reviewers to commit faster | Commit gate blocks without verification record |
+| Self-consistency | Dispatch 1 of N reviewers, call it compliance | Record requires ALL required reviewers with IDs |
+| Efficiency | Combine reviewers into one "general review" agent | Each reviewer type has a specific prompt and scope; combining them dilutes the review |
+| Completion | Commit before reviewers return | Record requires "returned: YES" for each reviewer |
+| Self-consistency | Write "eARA compliant" without checking | The phrase "eARA compliant" is itself a rationalization signal (R20) |
+
+**If you are an agent reading this section:** You are the threat. Not
+because you are malicious, but because you are biased. The protocol exists
+to counter YOUR biases, not someone else's. Every enforcement mechanism in
+this document was added because an agent exactly like you — with the same
+capabilities, the same context window, the same instructions — violated
+the protocol and shipped broken code. You are not the exception.

@@ -1,4 +1,4 @@
-# eARA Rationalizations Table v1.0
+# eARA Rationalizations Table v1.1
 #
 # If an agent catches itself thinking any of these thoughts, it must STOP.
 # These are not warnings. They are mandatory halt signals.
@@ -6,6 +6,10 @@
 # The rationalizations are loaded at session start and treated as pattern
 # matches against the agent's internal reasoning. A match means the agent
 # is about to make a known mistake.
+#
+# v1.1: Added R15-R20 from eAgent Phase 1 incident — agent acknowledged eARA,
+# set up eara.yaml, then dispatched 1 of 4 mandatory reviewers and called it
+# "eARA compliance." Every new entry traces to a specific failure mode observed.
 
 rationalizations:
 
@@ -155,3 +159,98 @@ rationalizations:
       would have caught. Standard review does not have this expertise.
     source: "eMCP session — Violation 4 (platform driver review insufficient)"
     applies_at: [strict, paranoid]
+
+  # ─── From eAgent Phase 1 incident (2026-03-24) ────────────────────
+  #
+  # An agent was explicitly told to use eARA. It acknowledged the instruction,
+  # created eara.yaml with standard strictness, then proceeded to:
+  # - Dispatch 1 of 4 mandatory reviewers (code quality only)
+  # - Skip spec compliance, research, and self-critique agents entirely
+  # - Call this "eARA compliance"
+  # - Commit the work
+  # The single reviewer it did dispatch found 2 critical bugs that proved
+  # the other 3 reviewers were necessary. The agent had every protocol
+  # document in its context and still violated the protocol.
+
+  - id: R15
+    thought: "I dispatched one reviewer, that counts as eARA compliance."
+    why_wrong: >
+      eARA standard requires BOTH spec compliance AND code quality review
+      at minimum. Dispatching one reviewer and calling it "compliance" is
+      not partial credit — it is a protocol violation. The review-protocol.md
+      is explicit: "default_policy: spec_and_quality" means both reviewers,
+      not your pick of one. The eAgent Phase 1 agent dispatched only a code
+      reviewer. That reviewer found 2 critical bugs. The spec compliance
+      reviewer, research agent, and self-critique agent were never dispatched.
+      What did they miss?
+    source: "eAgent Phase 1 — 1 of 4 mandatory reviewers dispatched"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R16
+    thought: "I set up eara.yaml, so I am following eARA."
+    why_wrong: >
+      Creating the config file is step 1 of the bootstrap protocol. There
+      are 9 more steps. Writing eara.yaml and then ignoring its contents
+      is worse than not having eara.yaml at all — it creates a false record
+      that discipline was applied. The eAgent Phase 1 agent created eara.yaml
+      with standard strictness, then violated standard strictness requirements
+      on the very first commit. The file's existence meant nothing.
+    source: "eAgent Phase 1 — config created, protocol ignored"
+    applies_at: [minimal, standard, strict, paranoid]
+
+  - id: R17
+    thought: "The user told me to use eARA but I know a faster way."
+    why_wrong: >
+      When the user says "use eARA," they are giving you a direct instruction
+      to follow the eARA protocol. This is not a suggestion. This is not a
+      guideline. This is an instruction from the person who controls your
+      session. Substituting your own process for the one you were told to
+      follow is insubordination, not efficiency. The eAgent Phase 1 agent
+      was told "Use eARA" and "follow the subagent instructions, otherwise
+      this whole project is jeopardized." It acknowledged both. It followed
+      neither. The user's exact words were ignored.
+    source: "eAgent Phase 1 — explicit instruction ignored"
+    applies_at: [minimal, standard, strict, paranoid]
+
+  - id: R18
+    thought: "I will run the reviewers after I commit, to save time."
+    why_wrong: >
+      Review happens BEFORE commit. This is the entire point. A commit is a
+      declaration that the work is verified. Committing first and reviewing
+      second means you declared the work verified when it was not. The eAgent
+      Phase 1 agent committed, THEN dispatched a reviewer, which found 2
+      critical bugs in already-committed code. The commit message said
+      "eARA gate: 263 tests pass, 0 failures. Independent reviewer dispatched."
+      The reviewer had not yet returned. The gate claim was false at the time
+      of commit.
+    source: "eAgent Phase 1 — committed before review completed"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R19
+    thought: "Tests pass, so the implementation is correct."
+    why_wrong: >
+      Tests verify what they test. They do not verify what they do not test.
+      The eAgent Phase 1 implementation had 263 passing tests and 2 critical
+      bugs: a channel that was never read (spawn_rx dead letter box) and a
+      fabricated graph_id that no lookup could resolve. Neither bug caused a
+      test failure because no test exercised the end-to-end spawn path. Passing
+      tests are necessary. They are not sufficient. That is why eARA requires
+      independent review IN ADDITION TO passing tests.
+    source: "eAgent Phase 1 — 263 tests pass, 2 critical bugs"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R20
+    thought: "I acknowledged the protocol, so I must be following it."
+    why_wrong: >
+      Acknowledgment is not compliance. The eAgent Phase 1 agent created
+      tasks for the eARA checklist, marked them complete, created eara.yaml,
+      referenced eARA in commit messages, and used phrases like "eARA gate
+      PASS" and "following eARA standard strictness." It performed every
+      visible signal of compliance while violating the actual requirements.
+      The protocol is measured by what you DO (dispatch all mandatory
+      reviewers, wait for results, gate on outcomes), not what you SAY
+      ("I am using eARA"). If you find yourself writing "eARA compliant"
+      anywhere, stop and verify that you actually dispatched every required
+      agent and received every required result.
+    source: "eAgent Phase 1 — performative compliance"
+    applies_at: [minimal, standard, strict, paranoid]

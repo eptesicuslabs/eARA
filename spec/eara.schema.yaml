@@ -238,6 +238,40 @@ properties:
             type: boolean
             description: "For audit assessments: report file sizes to prevent fabrication."
         additionalProperties: false
+      commit_gate:
+        type: object
+        description: >
+          v1.1. Mandatory review receipt verification before any commit.
+          The agent must produce a structured REVIEW GATE VERIFICATION record
+          listing every required reviewer, its agent ID, and its result.
+          Commits without this record are protocol violations. This gate
+          exists because an agent dispatched 1 of 4 required reviewers,
+          called it "eARA compliance," and committed code with 2 critical
+          bugs that the skipped reviewers would have caught.
+        properties:
+          enabled:
+            type: boolean
+            description: >
+              When true, the agent MUST produce the REVIEW GATE VERIFICATION
+              record before any commit. The record must list all required
+              reviewers with agent IDs and PASS/REJECT results. A commit
+              without this record is a protocol violation. Enabled at
+              standard+ by default.
+          block_on_missing_reviewer:
+            type: boolean
+            default: true
+            description: >
+              When true, if ANY required reviewer shows NOT_DISPATCHED or
+              has not returned, the commit is blocked. Cannot be set to
+              false at strict or paranoid.
+          require_all_returned:
+            type: boolean
+            default: true
+            description: >
+              When true, a dispatched reviewer that has not returned is
+              treated the same as a reviewer that was not dispatched.
+              "I dispatched it" is not credit. "It returned PASS" is credit.
+        additionalProperties: false
 
   # ─── Loop Configuration ─────────────────────────────────────────────
 
