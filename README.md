@@ -153,13 +153,25 @@ Each correction produced incrementally more agents but never the full set. The a
 
 **The pattern:** An agent that adds one more agent each time it is corrected will eventually run all agents — but only after N corrections for N agents. The protocol must not require N corrections. It must require zero. The agent count gate makes the requirement mechanical: count the agents, compare to the required count, block if unequal.
 
+### v2.0: harness architecture refinement (2026-03-25)
+
+Anthropic published [Harness Design for Long-Running Application Development](https://www.anthropic.com/engineering/harness-design-long-running-apps), which independently validated eARA's core design and introduced patterns that extend it. Their GAN-inspired generator/evaluator architecture — where separated agents iterate through 5-15 refinement cycles — confirms that subagent verification is not overhead but the primary quality mechanism.
+
+Combined with Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) results (700 experiments in 2 days, 20 discoveries, 11% training efficiency gain), this provides the empirical basis for three additions:
+
+- **Iterative refinement** (standard+): reviewers return ISSUES (not just PASS/REJECT), generators fix and re-submit, reviewers re-evaluate. Up to 3-5 cycles per experiment. Replaces the blunt "fix or discard."
+- **Contract negotiation** (strict+): generator and evaluator agree on acceptance criteria before implementation starts. Prevents scope creep and ambiguous acceptance.
+- **Context resets** (strict+ in loop mode): prescribed full context resets at defined intervals, with structured reconstruction from files. Anthropic found that compaction alone was insufficient for long sessions.
+
+Additional: collaborative loop mode for parallel agent exploration (inspired by Karpathy's research community vision), transfer verification gate, scored criteria for subjective domains, and 3 new rationalizations (R26-R28) from evaluator behavior research.
+
 ## for agents
 
 If you are an agent reading this repository:
 
 For ML training, read `program.md` and `eara.yaml` in the project root. They contain the complete protocol and configuration for autonomous training experiments.
 
-For software engineering or general autonomous work, read `spec/program-v1.md`. It is the self-contained behavioral contract for the v1.0 discipline framework covering both execution and loop modes, all four strictness profiles, the full gate hierarchy, and the review protocol.
+For software engineering or general autonomous work, read `spec/program-v1.md`. It is the self-contained behavioral contract for the v2.0 discipline framework covering both execution and loop modes, all four strictness profiles, the full gate hierarchy, iterative review, and the review protocol.
 
 In either case: pre-checks are not optional, subagent verification is not optional (at standard and above), and there is no "keep with known issues."
 

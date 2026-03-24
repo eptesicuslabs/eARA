@@ -320,3 +320,114 @@ These hold at ALL times during the loop, regardless of strictness:
    consecutive iterations, the loop enters PAUSED regardless of
    `pause_on_gate_failure`. Log the failure pattern. The loop cannot make
    progress — the user must intervene.
+
+---
+
+## Context Resets (v2.0)
+
+**When `loop.context_reset.enabled` is true.**
+
+Anthropic found that automatic compaction is insufficient for long sessions.
+Claude exhibited "context anxiety" — prematurely concluding work as the
+context window filled — that only full context resets resolved. For loops
+running hours or days, prescribed context resets prevent degradation.
+
+### When to reset
+
+A reset triggers when ANY of these conditions is met:
+- `interval_iterations` iterations have elapsed since last reset.
+- `interval_minutes` minutes of wall-clock time have elapsed.
+- The agent detects quality degradation (hypotheses becoming repetitive,
+  same experiments being tried again, declining metric trajectory).
+
+### Reset procedure
+
+See `context-reset-protocol.md` for the full protocol. Summary:
+
+1. Write current state to `.eara-state.json`.
+2. Log a "context_reset" entry to results.tsv.
+3. Clear the context window entirely.
+4. Reconstruct from persistent state:
+   a. Read `.eara-state.json` (iteration count, last metric, last commit).
+   b. Read the last 10 entries of results.tsv (recent experiment history).
+   c. Read the current source files (fresh, not from memory).
+   d. Read the eara.yaml config.
+5. Resume the loop from ANALYZE with clean context.
+
+The key insight: everything the agent needs to continue is in files.
+The context window is a working scratchpad, not permanent storage.
+
+---
+
+## Collaborative Loop Mode (v2.0)
+
+**When `loop.collaborative.enabled` is true.**
+
+Karpathy envisions "emulating a research community" — multiple agents
+exploring different optimization paths in parallel, promoting promising
+ideas to larger scales. This mode coordinates multiple parallel loop
+instances.
+
+### Architecture
+
+```
+              ┌─── Loop Instance A ───┐
+              │  source_files (copy A) │
+              │  local results log     │──┐
+              └────────────────────────┘  │
+                                          ▼
+              ┌─── Loop Instance B ───┐  shared
+              │  source_files (copy B) │  results.tsv
+              │  local results log     │──┤
+              └────────────────────────┘  │
+                                          ▼
+              ┌─── Loop Instance C ───┐  cross-
+              │  source_files (copy C) │  pollination
+              │  local results log     │──┘
+              └────────────────────────┘
+```
+
+### Coordination rules
+
+1. Each instance operates on its own copy of the source files (separate
+   git branches or worktrees).
+2. Each instance logs to a local results file AND appends to the shared
+   `shared_results_file`.
+3. When `cross_pollination` is true, each instance periodically reads the
+   shared results to learn from other instances' successes and failures.
+4. A successful experiment in one instance can be tested in another by
+   cherry-picking the commit and re-measuring.
+5. Instances do NOT coordinate in real-time. Coordination is through the
+   shared results file only — asynchronous, like a real research community.
+
+### Promotion
+
+When an experiment shows consistent improvement across 2+ instances, it is
+promoted: applied to the main branch and incorporated into all instances'
+starting state for the next context reset.
+
+---
+
+## Transfer Verification (v2.0)
+
+**When `loop.transfer_verification.enabled` is true.**
+
+Karpathy found that 20 improvements on a small model transferred to larger
+models. This gate tests whether discoveries generalize.
+
+### Process
+
+After a KEEP decision (experiment improves the metric and passes all gates):
+
+1. Run `loop.transfer_verification.command` — this should execute the
+   improvement in a different context (larger model, production data,
+   different hardware).
+2. If the improvement holds in the transfer context: log as
+   `keep+transferred` in results.tsv.
+3. If the improvement does NOT transfer: log as `keep+no_transfer`.
+   The experiment is still kept (it improved the primary metric), but
+   the transfer failure is recorded for analysis.
+
+This does not block the KEEP decision. Transfer verification is
+informational — it identifies which discoveries are robust versus
+which are specific to the current scale or context.

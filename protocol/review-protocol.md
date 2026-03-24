@@ -232,6 +232,226 @@ When `review.per_file_overrides` is defined:
 
 ---
 
+## Iterative Refinement Loop (v2.0)
+
+**When `review.iterative_refinement.enabled` is true.**
+
+The traditional eARA review is a single gate: PASS or REJECT. Anthropic's
+harness design research demonstrated that 5-15 iterations between generator
+and evaluator produce substantially better results. The insight is borrowed
+from Generative Adversarial Networks — the evaluator's feedback sharpens the
+generator's output across cycles.
+
+### The refinement cycle
+
+```
+IMPLEMENT → REVIEW
+              │
+        ┌─────┴─────┐
+        │            │
+      PASS        ISSUES
+        │            │
+      KEEP     FIX & RE-SUBMIT
+                     │
+                  REVIEW (iteration 2)
+                     │
+               ┌─────┴─────┐
+               │            │
+             PASS        ISSUES
+               │            │
+             KEEP     FIX & RE-SUBMIT
+                          │
+                       REVIEW (iteration 3)
+                          │
+                    ┌─────┴─────┐
+                    │            │
+                  PASS        ISSUES
+                    │            │
+                  KEEP    MAX REACHED → DISCARD or KEEP-WITH-NOTES
+```
+
+### Rules
+
+1. The reviewer returns one of: **PASS**, **ISSUES** (with specific findings),
+   or **REJECT** (blocking, non-negotiable failure).
+2. On **ISSUES**: the generator fixes the identified problems and re-submits
+   for review. The same reviewer re-evaluates (not a new reviewer — continuity
+   matters for tracking whether the fix actually resolved the issue).
+3. On **REJECT**: the experiment is discarded. No refinement. REJECT means
+   the approach is fundamentally wrong, not that it needs polish.
+4. The cycle repeats up to `max_iterations` times.
+5. If `max_iterations` is reached with unresolved ISSUES: the agent decides
+   whether the remaining issues are acceptable (KEEP with notes logged to
+   results.tsv) or not (DISCARD). This decision must be justified.
+6. At **paranoid** strictness, reaching `max_iterations` with unresolved
+   ISSUES always results in DISCARD.
+
+### Strategic decisions within the loop
+
+Following Anthropic's observation that their evaluator made strategic
+decisions during iteration — refine if scores trend positively, pivot if
+the approach stalls:
+
+- If the same issue appears across 3+ iterations: the generator should
+  consider a fundamentally different approach rather than incremental fixes.
+- If scores improve monotonically: continue refining.
+- If scores plateau or oscillate: pivot. The current approach has hit its
+  ceiling.
+
+---
+
+## Contract Negotiation (v2.0)
+
+**When `review.contract_negotiation.enabled` is true.**
+
+Before implementation begins, the generator and evaluator negotiate what
+"done" looks like. This produces a written contract stored at
+`review.contract_negotiation.contract_file`.
+
+### Contract structure
+
+```markdown
+# Sprint Contract: {experiment_description}
+
+## Acceptance Criteria
+- [ ] Criterion 1: specific, testable condition
+- [ ] Criterion 2: specific, testable condition
+
+## Verification Steps
+1. How criterion 1 will be verified
+2. How criterion 2 will be verified
+
+## Done Definition
+What state the code must be in for this experiment to be KEEP-eligible.
+
+## Failure Conditions
+What specific outcomes constitute REJECT (not just ISSUES).
+```
+
+### Process
+
+1. Generator proposes criteria based on the task specification.
+2. Evaluator reviews and may push back: "criterion 3 is untestable,"
+   "criterion 1 is too vague," "add a criterion for edge case X."
+3. Both agree on the final contract before implementation starts.
+4. During review, the evaluator grades against the contract — not against
+   their own interpretation of what "good" means.
+
+This prevents two failure modes observed in prior sessions:
+- Scope creep: the evaluator discovers new requirements during review
+  that were not in the original spec.
+- Ambiguous acceptance: the evaluator and generator disagree on what
+  "correct" means after the work is already done.
+
+---
+
+## Scored Criteria (v2.0)
+
+**When `review.scored_criteria` is defined.**
+
+For subjective domains where binary PASS/REJECT is insufficient — design
+quality, UX, writing, creative work — the evaluator scores each criterion
+on a 0-10 scale.
+
+### Scoring format
+
+```
+SCORED CRITERIA EVALUATION
+  ──────────────────────────────────────────────
+  {criterion_name}:  {score}/10  (weight: {w}, threshold: {t})
+    Evidence: {specific observations supporting the score}
+  ──────────────────────────────────────────────
+  Weighted total:    {sum of score * weight}
+  Threshold met:     {YES / NO}
+  Decision:          {PASS / ITERATE / REJECT}
+```
+
+### Interaction with iterative refinement
+
+Scored criteria drive the refinement loop. When iterative refinement is
+enabled:
+- Scores below threshold trigger ISSUES with specific feedback on what
+  to improve.
+- Scores above threshold pass.
+- The evaluator tracks score trajectories across iterations to detect
+  plateaus and recommend pivots.
+
+This is based directly on Anthropic's design quality framework where 4
+weighted axes (design quality, originality, craft, functionality) drove
+evaluation, and criteria language itself steered the model away from
+generic defaults before any feedback.
+
+---
+
+## File-Based Review Communication (v2.0)
+
+For traceability beyond results.tsv, the review protocol supports file-based
+inter-agent communication. Instead of passing all context through subagent
+prompts, use structured review files:
+
+### Review request file
+
+```markdown
+# Review Request: {experiment_id}
+
+## Files Changed
+- path/to/file1.ts (lines 42-87: new function)
+- path/to/file2.ts (lines 12-15: modified import)
+
+## What Changed and Why
+{description of the change and its purpose}
+
+## Contract Reference
+{link to sprint contract if contract_negotiation is enabled}
+
+## Specific Review Focus
+{what the generator is most uncertain about}
+```
+
+### Review result file
+
+```markdown
+# Review Result: {experiment_id}
+
+## Verdict: {PASS / ISSUES / REJECT}
+
+## Findings
+1. {finding with file path and line number}
+2. {finding with file path and line number}
+
+## Scores (if scored_criteria enabled)
+{scored criteria evaluation block}
+```
+
+These files create an audit trail that persists beyond the conversation
+context and can be read by future sessions after context resets.
+
+---
+
+## Evaluator Calibration Tuning (v2.0)
+
+eARA v1.x calibrates evaluators per-session using known-good samples.
+Anthropic's experience showed this is insufficient: "I watched it identify
+legitimate issues, then talk itself into deciding they weren't a big deal
+and approve the work anyway."
+
+### Cross-session calibration
+
+1. After each session, review the evaluator's logs.
+2. Identify divergences between evaluator judgment and actual quality
+   (bugs found later, issues the evaluator missed or dismissed).
+3. Update the evaluator's prompt template with examples of these
+   divergences: "In session N, you rated this PASS. It contained bug X.
+   The correct rating was ISSUES."
+4. Repeat over multiple sessions until evaluator judgment converges with
+   human judgment.
+
+This is a manual process by design — human judgment is the calibration
+target, and it cannot be automated without introducing the same self-evaluation
+bias the evaluator is meant to counter.
+
+---
+
 ## Commit Gate: Mandatory Review Receipt Verification
 
 **Added v1.1. Applies at: standard, strict, paranoid.**

@@ -1,4 +1,4 @@
-# eARA v1.0 — Experiment, Analyze, Retry, Adapt
+# eARA v2.0 — Experiment, Analyze, Retry, Adapt
 
 You are an autonomous agent operating under eARA discipline. This document is
 your complete behavioral contract. Read it once at session start. Follow it
@@ -333,6 +333,9 @@ These are not warnings. They are mandatory halt signals.
 | R23 | "I will run the verification agents but skip the smoke test." | The smoke test is the only agent that EXECUTES code. Reading code is necessary. Running code is necessary. Neither alone is sufficient. |
 | R24 | "Post-completion agents are optional -- only pre-commit agents matter." | Post-completion agents check the code in context: benchmarks, documentation, plan compliance recheck. Pre-commit isolation is not enough. |
 | R25 | "The user will tell me if I missed something." | The user is not your safety net. The protocol is. If you need the user to enumerate which agents to run, you have not read the protocol. |
+| R26 | "The evaluator approved it, so it must be good." | Evaluators talk themselves into approving work. Their approval is a signal, not a guarantee. Calibrate against human judgment over sessions. |
+| R27 | "Compaction will handle the context growth." | Compaction alone is insufficient for long sessions. Context anxiety persists. Full context resets with structured handoffs are required. |
+| R28 | "This harness component is still needed." | Harness assumptions become stale as models improve. Stress-test each component. If it is not load-bearing, remove it. |
 
 ---
 
@@ -377,6 +380,64 @@ cannot produce the record without actually dispatching and receiving results
 from every required reviewer. If you find yourself writing "eARA compliant"
 anywhere, stop and verify you actually dispatched every required agent and
 received every required result.
+
+---
+
+## 5c. Iterative Refinement (v2.0)
+
+**When enabled (standard+), replaces single-pass PASS/REJECT with a
+fix-and-re-review cycle.** Based on Anthropic's GAN-inspired harness where
+5-15 iterations between generator and evaluator produced substantially
+better results.
+
+When a reviewer returns ISSUES (not REJECT):
+1. Generator fixes the identified problems.
+2. Same reviewer re-evaluates (continuity matters).
+3. Repeat up to `max_iterations` times.
+4. If max reached with unresolved issues: DISCARD at paranoid, agent's
+   judgment call at strict/standard.
+
+REJECT is still immediate DISCARD — the approach is fundamentally wrong.
+ISSUES means it needs polish. The iteration loop is for polish, not for
+saving broken approaches.
+
+**Strategic decisions:** If the same issue recurs 3+ times, pivot — the
+approach has hit its ceiling. If scores improve monotonically, continue
+refining.
+
+---
+
+## 5d. Contract Negotiation (v2.0)
+
+**When enabled (strict+), generator and evaluator agree on acceptance
+criteria before implementation starts.** Produces a written contract at
+`.eara-contract.md`.
+
+The contract defines: what "done" looks like, how success is verified,
+what constitutes REJECT vs ISSUES. This prevents scope creep (evaluator
+invents new requirements during review) and ambiguous acceptance
+(disagreement on what "correct" means after the work is done).
+
+---
+
+## 5e. Context Resets for Long Loops (v2.0)
+
+**When enabled (strict+), the loop performs full context resets at defined
+intervals** rather than relying on automatic compaction.
+
+Anthropic found compaction insufficient — Claude exhibited "context anxiety"
+(prematurely concluding work as context fills). Full resets resolve this.
+
+**Reset procedure:**
+1. Write state to `.eara-state.json`.
+2. Log `context_reset` to results.tsv.
+3. Clear context entirely.
+4. Reconstruct from files: state file, last 10 results.tsv entries,
+   current source files, eara.yaml.
+5. Resume from ANALYZE with clean context.
+
+Everything the agent needs to continue is in files. The context window is a
+working scratchpad, not permanent storage. See `context-reset-protocol.md`.
 
 ---
 

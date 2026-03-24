@@ -337,3 +337,48 @@ rationalizations:
       protocol. Read it. Count the agents. Dispatch them. All of them.
     source: "eAgent Phase 1-5 — relied on user correction instead of protocol"
     applies_at: [minimal, standard, strict, paranoid]
+
+  # ─── From Anthropic harness design research (2026-03) ──────────────
+  #
+  # Anthropic's "Harness Design for Long-Running Application Development"
+  # confirmed eARA's subagent verification with production data and revealed
+  # new failure modes in evaluator behavior and context management.
+
+  - id: R26
+    thought: "The evaluator approved it, so it must be good."
+    why_wrong: >
+      Evaluators are biased too. Anthropic observed their evaluator "identify
+      legitimate issues, then talk itself into deciding they weren't a big
+      deal and approve the work anyway." The evaluator is a tool, not an
+      oracle. Its approval is a signal, not a guarantee. When combined with
+      iterative refinement, the evaluator's first-pass approval should be
+      treated as "no blocking issues found" not "the work is excellent."
+      Calibrate the evaluator against human judgment over multiple sessions.
+    source: "Anthropic harness design — evaluator self-talk approval bias"
+    applies_at: [standard, strict, paranoid]
+
+  - id: R27
+    thought: "Compaction will handle the context growth."
+    why_wrong: >
+      Anthropic found that compaction alone was insufficient for long sessions.
+      Claude exhibited "context anxiety" — prematurely concluding work as the
+      context window filled. Only full context resets with structured handoffs
+      resolved this. Compaction preserves continuity but does not resolve the
+      model's behavioral response to a filling context window. For loops
+      running hours or days, prescribed context resets are necessary.
+    source: "Anthropic harness design — compaction insufficient, context resets required"
+    applies_at: [strict, paranoid]
+
+  - id: R28
+    thought: "This harness component is still needed."
+    why_wrong: >
+      Every component in a harness encodes an assumption about what the model
+      cannot do on its own. Those assumptions become stale as models improve.
+      Anthropic found that Opus 4.6 no longer needed sprint decomposition
+      that Opus 4.5 required. The process of maintaining a harness is:
+      strip away components no longer necessary, add new ones for previously
+      impossible capabilities, re-examine assumptions with each model
+      generation. If you have not stress-tested whether a component is still
+      load-bearing, you are carrying dead weight that adds latency and cost.
+    source: "Anthropic harness design — harness assumptions become stale"
+    applies_at: [standard, strict, paranoid]

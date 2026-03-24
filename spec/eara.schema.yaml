@@ -238,6 +238,77 @@ properties:
             type: boolean
             description: "For audit assessments: report file sizes to prevent fabrication."
         additionalProperties: false
+      iterative_refinement:
+        type: object
+        description: >
+          v2.0. GAN-inspired iterative review loop. When a reviewer identifies
+          issues, the generator fixes and re-submits within the same experiment,
+          and the reviewer re-evaluates. Replaces the blunt "fix or discard"
+          with "fix, re-review, then decide." Based on Anthropic's harness
+          design finding that 5-15 refinement iterations between generator
+          and evaluator produce substantially better results than single-pass
+          review.
+        properties:
+          enabled:
+            type: boolean
+            default: false
+            description: "When true, reviewers can request fixes and re-evaluate."
+          max_iterations:
+            type: integer
+            minimum: 1
+            default: 3
+            description: >
+              Maximum number of fix-and-re-review cycles per experiment.
+              After this limit, the experiment must be kept or discarded
+              based on the last review result.
+        additionalProperties: false
+      contract_negotiation:
+        type: object
+        description: >
+          v2.0. Before implementation begins, the generator and evaluator
+          negotiate acceptance criteria. Produces a written contract defining
+          what "done" looks like, how success is verified, and what
+          constitutes a failure. Based on Anthropic's sprint contracts
+          pattern. Prevents scope creep and ambiguous acceptance.
+        properties:
+          enabled:
+            type: boolean
+            default: false
+            description: "When true, a contract is negotiated before each experiment."
+          contract_file:
+            type: string
+            default: ".eara-contract.md"
+            description: "File where the negotiated contract is written."
+        additionalProperties: false
+      scored_criteria:
+        type: array
+        description: >
+          v2.0. For subjective domains (design, UX, writing quality), graded
+          scoring alongside binary gates. Each criterion has a name, weight,
+          and minimum threshold. Evaluators produce scores per axis that drive
+          iterative refinement, not just PASS/REJECT. Based on Anthropic's
+          4-axis design quality framework with differential weighting.
+        items:
+          type: object
+          required: [name, weight, threshold]
+          properties:
+            name:
+              type: string
+              description: "Criterion name (e.g., 'design_quality', 'originality')."
+            weight:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: "Relative importance (0-1). Weights should sum to 1."
+            threshold:
+              type: number
+              minimum: 0
+              maximum: 10
+              description: "Minimum score (0-10) for this criterion to pass."
+            description:
+              type: string
+              description: "What this criterion measures and what constitutes high vs low scores."
+          additionalProperties: false
       commit_gate:
         type: object
         description: >
@@ -330,6 +401,71 @@ properties:
             description: >
               Persists loop state (iteration count, last metric, last commit,
               hypothesis history) for pause/resume across sessions.
+        additionalProperties: false
+      context_reset:
+        type: object
+        description: >
+          v2.0. Prescribes context resets at defined intervals rather than
+          relying on automatic compaction. Based on Anthropic's finding that
+          compaction alone was insufficient — Claude exhibited "context anxiety"
+          that only full context resets resolved. Each reset reads results.tsv,
+          last commit state, and .eara-state.json to reconstruct context.
+        properties:
+          enabled:
+            type: boolean
+            default: false
+            description: "When true, context resets are performed at defined intervals."
+          interval_iterations:
+            type: [integer, "null"]
+            minimum: 1
+            description: "Reset context every N iterations. null to disable."
+          interval_minutes:
+            type: [number, "null"]
+            minimum: 1
+            description: "Reset context every N minutes. null to disable."
+        additionalProperties: false
+      collaborative:
+        type: object
+        description: >
+          v2.0. Coordinates multiple parallel loop instances with shared
+          results and cross-pollination of successful experiments. Based
+          on Karpathy's vision of "emulating a research community" where
+          swarms of agents explore different optimization paths and
+          promote promising ideas to larger scales.
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          shared_results_file:
+            type: string
+            description: "Shared results.tsv that all loop instances read and append to."
+          instance_count:
+            type: integer
+            minimum: 2
+            description: "Number of parallel loop instances."
+          cross_pollination:
+            type: boolean
+            default: true
+            description: >
+              When true, each instance reads successful experiments from
+              other instances and considers combining them.
+        additionalProperties: false
+      transfer_verification:
+        type: object
+        description: >
+          v2.0. Tests whether improvements found in the loop transfer to
+          a different scale or context. Based on Karpathy's finding that
+          20 improvements on a small model transferred to larger models.
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          command:
+            type: string
+            description: "Command to run the improvement at a different scale."
+          target_context:
+            type: string
+            description: "Description of the transfer target (e.g., 'larger model', 'production data')."
         additionalProperties: false
 
   # ─── Logging ────────────────────────────────────────────────────────
