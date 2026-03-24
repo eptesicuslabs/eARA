@@ -125,7 +125,7 @@ if len(rats) == 28:
 else:
     error(f"Rationalizations table has {len(rats)} entries (expected 28)")
 
-# Check IDs are sequential R01-R13
+# Check IDs are sequential R01-R28
 for i, rat in enumerate(rats):
     expected_id = f"R{i+1:02d}"
     actual_id = rat.get("id", "")
@@ -245,10 +245,10 @@ for ef in example_files:
         else:
             error(f"  {ef.name}: loop mode missing 'loop' config")
 
-# ─── Gate 8: program.md covers all sections ──────────────────────
+# ─── Gate 8: spec/program.md covers all sections ─────────────────
 
-print("\n=== Gate 8: spec/program-v1.md Completeness ===")
-program = (ROOT / "spec/program-v1.md").read_text()
+print("\n=== Gate 8: spec/program.md Completeness ===")
+program = (ROOT / "spec/program.md").read_text()
 
 required_sections = [
     ("Bootstrap", r"## 1\. Bootstrap"),
@@ -265,16 +265,16 @@ required_sections = [
 
 for name, pattern in required_sections:
     if re.search(pattern, program):
-        ok(f"  program-v1.md has section: {name}")
+        ok(f"  program.md has section: {name}")
     else:
-        error(f"  program-v1.md missing section: {name}")
+        error(f"  program.md missing section: {name}")
 
-# Check rationalizations table in program-v1.md has 20 entries
+# Check rationalizations table in spec/program.md has 28 entries
 rat_rows = re.findall(r'\| R\d{2} \|', program)
 if len(rat_rows) == 28:
-    ok(f"  program-v1.md rationalizations table has {len(rat_rows)} entries")
+    ok(f"  program.md rationalizations table has {len(rat_rows)} entries")
 else:
-    error(f"  program-v1.md rationalizations table has {len(rat_rows)} entries (expected 28)")
+    error(f"  program.md rationalizations table has {len(rat_rows)} entries (expected 28)")
 
 # ─── Summary ─────────────────────────────────────────────────────
 

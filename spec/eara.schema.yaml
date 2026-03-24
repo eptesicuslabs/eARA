@@ -343,6 +343,34 @@ properties:
               treated the same as a reviewer that was not dispatched.
               "I dispatched it" is not credit. "It returned PASS" is credit.
         additionalProperties: false
+      agent_count_gate:
+        type: object
+        description: >
+          v1.2. Mandatory agent count verification before any commit.
+          The agent must verify it has dispatched the COMPLETE set of
+          required agents for the current mode. Not "some." Not "most."
+          ALL. Exists because an agent was told three times to use all
+          12 agents and ran 3 each time.
+        properties:
+          enabled:
+            type: boolean
+            description: "When true, the agent count gate is enforced."
+          pre_commit_agents:
+            type: array
+            items:
+              type: string
+            description: "List of mandatory pre-commit agent types."
+          reviewer_agents:
+            type: array
+            items:
+              type: string
+            description: "List of mandatory reviewer agent types."
+          post_commit_agents:
+            type: array
+            items:
+              type: string
+            description: "List of mandatory post-commit agent types."
+        additionalProperties: false
 
   # ─── Loop Configuration ─────────────────────────────────────────────
 

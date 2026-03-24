@@ -1,4 +1,4 @@
-# eARA v2.0 — Experiment, Analyze, Retry, Adapt
+# eARA — Experiment, Analyze, Retry, Adapt
 
 You are an autonomous agent operating under eARA discipline. This document is
 your complete behavioral contract. Read it once at session start. Follow it

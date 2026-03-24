@@ -8,11 +8,9 @@ Originally inspired by [karpathy/autoresearch](https://github.com/karpathy/autor
 
 ## Getting Started
 
-The agent reads `spec/program-v1.md` at session start. That single file is the complete behavioral contract covering both modes, all four strictness profiles, the gate hierarchy, iterative review, and the commit gate.
+The agent reads `spec/program.md` at session start. That single file is the complete behavioral contract covering both modes, all four strictness profiles, the gate hierarchy, iterative review, and the commit gate.
 
-`eara.yaml` in the project root configures the session: metric to optimize, gates that must pass, strictness level, loop parameters. See `spec/eara.schema.yaml` for the full schema and `examples/` for ready-to-use configurations at each strictness level.
-
-For ML training specifically, the root-level `program.md` and `eara.yaml` provide the original autoresearch-compatible setup with Kaggle and RunPod compute backends.
+The project root should contain an `eara.yaml` conforming to `spec/eara.schema.yaml`. See `examples/` for ready-to-use configurations at each strictness level. The root-level `eara.yaml` in this repository is an ML training template for autoresearch-compatible setups and does not use the v2 schema.
 
 ## Modes
 
@@ -58,13 +56,13 @@ Profiles determine which gates are mandatory, whether subagent verification is r
 
 **Subagent verification.** The implementing agent does not review its own work. An independent subagent with fresh context verifies every experiment. At standard strictness and above, this is non-negotiable.
 
-**Iterative refinement.** Reviewers return structured feedback (PASS, ISSUES, or REJECT). On ISSUES, the generator fixes and resubmits. The reviewer re-evaluates. Up to 3-5 cycles per experiment. Based on Anthropic's finding that 5-15 iteration cycles between generator and evaluator substantially improve output quality.
+**Iterative refinement.** Reviewers return structured feedback (PASS, ISSUES, or REJECT). On ISSUES, the generator fixes and resubmits. The reviewer re-evaluates. Up to 3-5 cycles per experiment.
 
 **Append-only logging.** Every experiment is recorded in results.tsv, including failures. Discards carry as much information as keeps.
 
 **Rationalizations as halt signals.** The rationalizations table (28 entries, each traced to a specific observed failure) acts as a pattern match against the agent's own reasoning. If the agent catches itself thinking a listed thought, it must stop.
 
-**Commit gate.** At standard+ strictness, every commit requires a structured REVIEW GATE VERIFICATION record listing each required reviewer's agent ID and result. Commits without this record are protocol violations.
+**Commit gate.** At standard+ strictness, every commit requires a structured REVIEW GATE VERIFICATION record and an AGENT COUNT GATE record listing each required agent and reviewer with IDs and results. Commits without these records are protocol violations.
 
 ## Gates
 
@@ -76,7 +74,7 @@ Gates protect everything the metric does not measure. They prevent the agent fro
 
 ```
 spec/
-  program-v1.md                     behavioral contract (all domains)
+  program.md                        behavioral contract (all domains)
   eara.schema.yaml                  JSON Schema for eara.yaml
   strictness-profiles.yaml          profile definitions
   rationalizations.yaml             28 mandatory halt signals
@@ -99,16 +97,16 @@ examples/
   eara-loop-training.yaml           ML training (never_stop)
   eara-loop-automation.yaml         long-running optimization
 
-program.md                          ML-specific contract (autoresearch compatible)
-eara.yaml                           ML config template (local/kaggle/runpod)
+loop-examples.md                    loop scenario reference
+scripts/self-test.py                automated gate verification
 scripts/autoresearch_loop.md        ML subagent verification protocol
+program-ml.md                       ML-specific contract (autoresearch compatible)
+eara.yaml                           ML config template (local/kaggle/runpod)
 ```
 
 ## For Agents
 
-Read `spec/program-v1.md`. It is the complete behavioral contract. Follow it exactly.
-
-Read `eara.yaml` in the project root for the session configuration: what metric to optimize, which gates must pass, what strictness level to enforce, and whether to run in loop or execution mode.
+Read `spec/program.md`. It is the complete behavioral contract. Follow it exactly.
 
 Pre-checks are not optional. Subagent verification is not optional at standard and above. There is no "keep with known issues."
 
