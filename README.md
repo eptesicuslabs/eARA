@@ -2,19 +2,17 @@
 
 Discipline framework for autonomous agents operating on modify-measure-decide loops.
 
-An agent reads `program.md`, receives a task, and works autonomously: modify code, measure the result, check gates, keep what improves the metric, discard what doesn't, repeat. The framework applies equally to ML training runs, software engineering, API optimization, and any domain where an agent modifies something, measures the outcome, and decides whether to keep or revert.
+An agent reads the behavioral contract, receives a task, and works autonomously: modify code, measure the result, check gates, keep what improves the metric, discard what doesn't, repeat. The framework applies to ML training, software engineering, API optimization, and any domain where an agent modifies something, measures the outcome, and decides whether to keep or revert.
 
 Originally inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch). Extended with formalized strictness profiles, subagent verification protocols, configurable gate hierarchies, and iterative review based on findings from [Anthropic's harness design research](https://www.anthropic.com/engineering/harness-design-long-running-apps).
 
-## Overview
+## Getting Started
 
-Two files. No framework code. No package to install. The agent is the framework.
+The agent reads `spec/program-v1.md` at session start. That single file is the complete behavioral contract covering both modes, all four strictness profiles, the gate hierarchy, iterative review, and the commit gate.
 
-`program.md` is the behavioral contract. The agent reads it and follows it. Compatible with any LLM agent capable of reading files, editing code, and running commands.
+`eara.yaml` in the project root configures the session: metric to optimize, gates that must pass, strictness level, loop parameters. See `spec/eara.schema.yaml` for the full schema and `examples/` for ready-to-use configurations at each strictness level.
 
-`eara.yaml` is the project-specific configuration. It defines the metric, the strictness profile, the gates, and the loop parameters.
-
-Copy both into your project root, edit `eara.yaml` for your task, and point the agent at the repo.
+For ML training specifically, the root-level `program.md` and `eara.yaml` provide the original autoresearch-compatible setup with Kaggle and RunPod compute backends.
 
 ## Modes
 
@@ -74,27 +72,13 @@ Beyond the primary metric, `eara.yaml` defines named pass/fail constraints check
 
 Gates protect everything the metric does not measure. They prevent the agent from improving the target at the expense of correctness, stability, or other properties.
 
-## Compute Backends (ML)
-
-For ML training loops, `eara.yaml` supports three compute backends:
-
-- **local** -- run the training command directly
-- **kaggle** -- push a notebook via the API, poll, pull results
-- **runpod** -- create a pod via the API, upload, run, pull, destroy
-
-All three follow the same interface. Switching between them is a single field change in `eara.yaml`.
-
 ## Repository Structure
 
 ```
-program.md                          agent behavioral contract (ML)
-eara.yaml                           ML config template
-scripts/autoresearch_loop.md        subagent verification protocol
-
 spec/
-  program-v1.md                     generalized agent contract (all domains, v2.0)
+  program-v1.md                     behavioral contract (all domains)
   eara.schema.yaml                  JSON Schema for eara.yaml
-  strictness-profiles.yaml          profile definitions (minimal/standard/strict/paranoid)
+  strictness-profiles.yaml          profile definitions
   rationalizations.yaml             28 mandatory halt signals
   results-schema.yaml               results.tsv column definitions
 
@@ -114,13 +98,17 @@ examples/
   eara-paranoid.yaml                trust-nothing mode
   eara-loop-training.yaml           ML training (never_stop)
   eara-loop-automation.yaml         long-running optimization
+
+program.md                          ML-specific contract (autoresearch compatible)
+eara.yaml                           ML config template (local/kaggle/runpod)
+scripts/autoresearch_loop.md        ML subagent verification protocol
 ```
 
 ## For Agents
 
-For ML training, read `program.md` and `eara.yaml` in the project root. They contain the complete protocol for autonomous experiment loops.
+Read `spec/program-v1.md`. It is the complete behavioral contract. Follow it exactly.
 
-For software engineering or general autonomous work, read `spec/program-v1.md`. It is the self-contained behavioral contract covering execution and loop modes, all four strictness profiles, the gate hierarchy, iterative review, and the commit gate.
+Read `eara.yaml` in the project root for the session configuration: what metric to optimize, which gates must pass, what strictness level to enforce, and whether to run in loop or execution mode.
 
 Pre-checks are not optional. Subagent verification is not optional at standard and above. There is no "keep with known issues."
 

@@ -1,0 +1,16 @@
+# Session reports and case studies (internal reference, not distributed)
+*-session-report.md
+*-case-study.md
+
+# eARA runtime state
+.eara-state.json
+.eara-contract.md
+results.tsv
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
