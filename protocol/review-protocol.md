@@ -13,7 +13,7 @@ becomes anchored to its own assumptions. Fresh reviewers break that anchor.
 
 > The implementing agent does not review its own work. Ever.
 
-This is non-negotiable at standard+ strictness. The implementer's self-report
+This is non-negotiable at both normal and ultra. The implementer's self-report
 may be incomplete, inaccurate, or optimistic. Independent verification by a
 fresh-context subagent is the primary quality mechanism.
 
@@ -30,7 +30,7 @@ session with 100% review compliance had zero reverts and caught 5 real issues.
 **Purpose:** Verify that the implementation matches the specification line
 by line. Not "generally matches" — specifically, concretely matches.
 
-**Dispatched at:** standard, strict, paranoid.
+**Dispatched at:** normal and ultra.
 
 **Default prompt structure:**
 ```
@@ -57,7 +57,7 @@ INSTRUCTIONS:
 **Purpose:** Check naming, duplication, architectural consistency, edge
 cases, error handling, and adherence to project conventions.
 
-**Dispatched at:** standard, strict, paranoid.
+**Dispatched at:** ultra (default), normal (via per_file_overrides or override).
 
 **Default prompt structure:**
 ```
@@ -82,7 +82,8 @@ INSTRUCTIONS:
 **Purpose:** Review code that calls OS APIs, FFI, P/Invoke, native bindings.
 This reviewer has specialized knowledge of platform-specific bugs.
 
-**Dispatched at:** strict (per-file override), paranoid (always).
+**Dispatched at:** normal (per-file override), ultra (default per-file
+patterns included in profile).
 
 **Triggered by:** Files matching `per_file_overrides` patterns with
 `extra_reviewers: [native_code]`.
@@ -109,7 +110,8 @@ INSTRUCTIONS:
 **Purpose:** Review code that touches auth, crypto, permissions, or security
 boundaries.
 
-**Dispatched at:** strict (per-file override), paranoid (always).
+**Dispatched at:** normal (per-file override), ultra (default per-file
+patterns included in profile).
 
 **Triggered by:** Files matching `per_file_overrides` patterns with
 `extra_reviewers: [security]`.
@@ -141,7 +143,7 @@ boundaries.
 
 ## Evidence Requirements
 
-At **strict** and **paranoid** strictness, evidence requirements are enforced.
+At **ultra** (or normal with overrides), evidence requirements are enforced.
 
 ### When `evidence_requirements.require_quotes` is true:
 
@@ -154,7 +156,7 @@ quote the specific null-handling code.
 Every claim must reference specific line numbers. "Line 42 checks for null
 before dereferencing" is valid. "The code checks for null" is not.
 
-### When `evidence_requirements.require_file_sizes` is true (paranoid):
+### When `evidence_requirements.require_file_sizes` is true (ultra):
 
 For audit/assessment reviews, the reviewer must report file sizes. This
 prevents fabrication — an audit that claims a 300-line file is a "stub"
@@ -172,7 +174,7 @@ If a reviewer's response lacks the required evidence:
 
 ## Calibration Checks
 
-At **strict+** strictness, when `review.reviewers.calibration.enabled` is true:
+At **ultra** (or normal with overrides), when `review.reviewers.calibration.enabled` is true:
 
 Before trusting an **audit or assessment** subagent's output:
 
@@ -283,8 +285,8 @@ IMPLEMENT → REVIEW
 5. If `max_iterations` is reached with unresolved ISSUES: the agent decides
    whether the remaining issues are acceptable (KEEP with notes logged to
    results.tsv) or not (DISCARD). This decision must be justified.
-6. At **paranoid** strictness, reaching `max_iterations` with unresolved
-   ISSUES always results in DISCARD.
+6. At **ultra**, reaching `max_iterations` with unresolved ISSUES always
+   results in DISCARD.
 
 ### Strategic decisions within the loop
 
@@ -454,7 +456,7 @@ bias the evaluator is meant to counter.
 
 ## Commit Gate: Mandatory Review Receipt Verification
 
-**Added v1.1. Applies at: standard, strict, paranoid.**
+**Added v1.1. Applies at: normal and ultra.**
 
 **This gate blocks commits. It is not advisory. It cannot be skipped.**
 
@@ -565,12 +567,12 @@ the protocol and shipped broken code. You are not the exception.
 
 ## Mandatory Agent Count Gate
 
-**Added v1.2. Applies at: standard, strict, paranoid.**
+**Added v1.2. Applies at: normal and ultra.**
 
 Before ANY commit, the agent MUST verify it has dispatched the COMPLETE
 set of required agents for the current mode. Not "some." Not "most." ALL.
 
-### Execution mode (standard+ strictness)
+### Execution mode (normal and ultra)
 
 The following agents are MANDATORY before every commit:
 
@@ -595,10 +597,10 @@ The following agents are MANDATORY before every commit:
 10. **Code Investigation Agent** — trace issue through code, identify root cause.
 
 **Reviewer agents (dispatched per review policy, 2-4 agents):**
-11. **Spec Compliance Reviewer** — at standard+.
-12. **Code Quality Reviewer** — at standard+.
-13. **Native Code Reviewer** — at strict+ for platform files.
-14. **Security Reviewer** — at strict+ for security files.
+11. **Spec Compliance Reviewer** — at normal and ultra.
+12. **Code Quality Reviewer** — at ultra (or normal with override).
+13. **Native Code Reviewer** — per-file overrides (default patterns at ultra).
+14. **Security Reviewer** — per-file overrides (default patterns at ultra).
 
 ### The Count Gate
 

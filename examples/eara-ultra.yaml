@@ -1,13 +1,13 @@
-# eARA Paranoid Example
-# For: trust-nothing environments, compliance-critical work
-# Philosophy: "Every claim needs evidence. Every boundary is enforced.
-#              Every verifier is verified. Every commit is checked for framing."
+# eARA Ultra Example
+# For: high-stakes, multi-project, compliance-critical, trust-nothing
+# Philosophy: "Every agent reads the protocol. Every claim needs evidence.
+#              Every boundary is enforced. Every verifier is verified."
 
-eara_version: "1.0"
+eara_version: "2.0"
 project: "eSkill platform-agnostic skill library"
 description: "82 skills across 10 plugins — multi-project workspace"
 
-strictness: paranoid
+strictness: ultra
 mode: execution
 
 gates:

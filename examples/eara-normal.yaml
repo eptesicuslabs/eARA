@@ -1,12 +1,12 @@
-# eARA Standard Example
-# For: production software engineering
-# Philosophy: "Build, test, and verify independently before shipping."
+# eARA Normal Example
+# For: production software, prototypes, standard engineering
+# Philosophy: "Build, test, verify independently. Keep it lean."
 
-eara_version: "1.0"
+eara_version: "2.0"
 project: "RAMSpeed algorithmic improvements"
 description: "7 improvements to the memory optimization pipeline"
 
-strictness: standard
+strictness: normal
 mode: execution
 
 gates:

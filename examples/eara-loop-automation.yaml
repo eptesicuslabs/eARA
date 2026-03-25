@@ -2,12 +2,12 @@
 # The agent monitors a system, detects issues, applies fixes, and verifies.
 # Runs indefinitely until the system stabilizes or is interrupted.
 
-eara_version: "1.0"
+eara_version: "2.0"
 project: "API performance optimization"
 description: "Continuously monitor and optimize API endpoint performance under load"
 
 strictness:
-  profile: strict
+  profile: ultra
   overrides:
     review:
       per_file_overrides:

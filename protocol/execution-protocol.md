@@ -50,9 +50,9 @@ Send the task to an implementation subagent with precisely crafted context:
 - Unrelated file contents
 - Your assumptions about the code (let the subagent form its own)
 
-At **minimal** strictness, the orchestrating agent may implement directly
-without dispatching a subagent. At **standard+**, subagent dispatch is
-mandatory for non-trivial changes.
+Subagent dispatch is mandatory for non-trivial changes at both normal
+and ultra. At **ultra**, every dispatched subagent receives the full
+eARA protocol stack injected into its prompt.
 
 ### 3. PRE-CHECKS
 
@@ -76,11 +76,9 @@ If any required gate fails:
 Based on the resolved review policy, dispatch reviewer subagents. See
 `review-protocol.md` for full details.
 
-At **minimal**: no review.
-At **standard**: spec compliance + code quality review.
-At **strict**: + per-file overrides (native code, security review for
-  sensitive files) + calibration checks for audit subagents.
-At **paranoid**: full review on every file + evidence requirements.
+At **normal**: spec compliance review (code quality via override).
+At **ultra**: spec compliance + code quality review + per-file overrides
+  (native code, security) + calibration checks + evidence requirements.
 
 Each reviewer receives:
 - The actual file content (NOT the implementer's report)
@@ -134,7 +132,7 @@ For execution mode, `metric_before` and `metric_after` are typically `-`
 
 ### 8. POST-MERGE VERIFICATION
 
-If `gates.post_merge_verification.enabled` is true (strict+ profiles):
+If `gates.post_merge_verification.enabled` is true (ultra, or normal with override):
 
 After merging any parallel work (worktrees, branches), before proceeding:
 
@@ -155,7 +153,7 @@ Move to the next task. The cycle repeats for each logical unit of work.
 
 ## Test-Before-Ship Gate
 
-At **standard+** strictness, when `gates.test_before_ship.enabled` is true:
+At both **normal** and **ultra**, when `gates.test_before_ship.enabled` is true:
 
 Before marking an experiment as KEEP, check:
 
@@ -175,7 +173,7 @@ They do not count as "keep" until verified.
 
 ## Boundary Gate
 
-At **strict+** strictness, when `boundaries.scope_gate` is true:
+At **ultra** (or normal with override), when `boundaries.scope_gate` is true:
 
 Before every commit, check each staged file:
 
@@ -189,7 +187,7 @@ Before every commit, check each staged file:
 
 ## Framing Gate
 
-At **standard+** strictness, when a user corrects a project-level assumption:
+At both **normal** and **ultra**, when a user corrects a project-level assumption:
 
 1. **HALT** current work immediately.
 2. Search all files and outputs for instances of the incorrect framing.
@@ -197,7 +195,7 @@ At **standard+** strictness, when a user corrects a project-level assumption:
 4. Verify the fix (search should return zero results).
 5. Resume only after verification.
 
-At **paranoid** strictness (`framing.verify_framing_on_commit`):
+At **ultra** (`framing.verify_framing_on_commit`):
 - Before every commit, search staged content for terms in `framing.project_is_not`.
 - If any banned term is found: block the commit.
 
@@ -207,10 +205,10 @@ At **paranoid** strictness (`framing.verify_framing_on_commit`):
 
 Even without the loop, execution mode preserves all five eARA invariants:
 
-1. **Mandatory subagent verification** (at standard+). Fresh context
+1. **Mandatory subagent verification** (normal and ultra). Fresh context
    prevents blind spots. Independent review prevents optimistic self-assessment.
 2. **Pre-run checks** before every experiment. Build, test, lint, custom gates.
 3. **Binary keep/discard**. No "keep with known issues."
-4. **Append-only results logging** (at standard+). Every experiment logged.
+4. **Append-only results logging** (normal and ultra). Every experiment logged.
 5. **Rationalizations table active**. If the agent thinks "this is simple
    enough to skip review," it must STOP.

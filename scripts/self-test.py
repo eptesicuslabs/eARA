@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""eARA self-test: validates the eARA v1.0 implementation."""
+"""eARA self-test: validates the eARA v2.0 implementation."""
 
 import yaml
 import os
@@ -71,13 +71,13 @@ with open(ROOT / "spec/strictness-profiles.yaml") as f:
     profiles_doc = yaml.safe_load(f)
 
 profiles = profiles_doc.get("profiles", {})
-expected_profiles = ["minimal", "standard", "strict", "paranoid"]
+expected_profiles = ["normal", "ultra"]
 for name in expected_profiles:
     if name in profiles:
         ok(f"Profile '{name}' defined")
         # Check that each profile has the expected sections
         profile = profiles[name]
-        for section in ["gates", "review", "logging", "boundaries", "framing"]:
+        for section in ["agent_bootstrap", "gates", "review", "logging", "boundaries", "framing"]:
             if section in profile:
                 ok(f"  '{name}' has '{section}' section")
             else:
@@ -85,33 +85,42 @@ for name in expected_profiles:
     else:
         error(f"Profile '{name}' not defined")
 
-# Verify strict+ has post_merge_verification enabled
-strict_pmv = profiles.get("strict", {}).get("gates", {}).get("post_merge_verification", {}).get("enabled", False)
-paranoid_pmv = profiles.get("paranoid", {}).get("gates", {}).get("post_merge_verification", {}).get("enabled", False)
-if strict_pmv:
-    ok("strict profile has post_merge_verification enabled")
+# Verify ultra has post_merge_verification enabled
+ultra_pmv = profiles.get("ultra", {}).get("gates", {}).get("post_merge_verification", {}).get("enabled", False)
+if ultra_pmv:
+    ok("ultra profile has post_merge_verification enabled")
 else:
-    error("strict profile missing post_merge_verification")
-if paranoid_pmv:
-    ok("paranoid profile has post_merge_verification enabled")
-else:
-    error("paranoid profile missing post_merge_verification")
+    error("ultra profile missing post_merge_verification")
 
-# Verify standard+ has test_before_ship enabled
-for pname in ["standard", "strict", "paranoid"]:
+# Verify both profiles have test_before_ship enabled
+for pname in ["normal", "ultra"]:
     tbs = profiles.get(pname, {}).get("gates", {}).get("test_before_ship", {}).get("enabled", False)
     if tbs:
         ok(f"{pname} profile has test_before_ship enabled")
     else:
         error(f"{pname} profile missing test_before_ship")
 
-# Verify paranoid has evidence requirements
-paranoid_ev = profiles.get("paranoid", {}).get("review", {}).get("evidence_requirements", {})
+# Verify ultra has evidence requirements
+ultra_ev = profiles.get("ultra", {}).get("review", {}).get("evidence_requirements", {})
 for req in ["require_quotes", "require_line_numbers", "require_file_sizes"]:
-    if paranoid_ev.get(req, False):
-        ok(f"paranoid has {req} enabled")
+    if ultra_ev.get(req, False):
+        ok(f"ultra has {req} enabled")
     else:
-        error(f"paranoid missing {req}")
+        error(f"ultra missing {req}")
+
+# Verify ultra has inject_into_subagents enabled
+ultra_inject = profiles.get("ultra", {}).get("agent_bootstrap", {}).get("inject_into_subagents", False)
+if ultra_inject:
+    ok("ultra has inject_into_subagents enabled")
+else:
+    error("ultra missing inject_into_subagents")
+
+# Verify normal has inject_into_subagents disabled
+normal_inject = profiles.get("normal", {}).get("agent_bootstrap", {}).get("inject_into_subagents", True)
+if not normal_inject:
+    ok("normal has inject_into_subagents disabled")
+else:
+    error("normal should have inject_into_subagents disabled")
 
 # ─── Gate 4: Rationalizations count ──────────────────────────────
 
@@ -139,6 +148,14 @@ for rat in rats:
     for field in ["id", "thought", "why_wrong", "source", "applies_at"]:
         if field not in rat:
             error(f"  Rationalization {rat.get('id', '?')} missing field '{field}'")
+
+# Verify applies_at only uses valid profile names
+valid_profiles = {"normal", "ultra"}
+for rat in rats:
+    applies = set(rat.get("applies_at", []))
+    invalid = applies - valid_profiles
+    if invalid:
+        error(f"  {rat['id']} has invalid applies_at values: {invalid}")
 
 # ─── Gate 5: Results schema ──────────────────────────────────────
 
@@ -219,7 +236,7 @@ for ef in example_files:
         config = yaml.safe_load(f)
 
     # Check required fields
-    has_version = config.get("eara_version") == "1.0"
+    has_version = config.get("eara_version") == "2.0"
     has_project = "project" in config
     has_strictness = "strictness" in config
     has_mode = "mode" in config
@@ -285,7 +302,7 @@ print(f"{'='*60}")
 if ERRORS:
     print("\nFAILED GATES:")
     for e in ERRORS:
-        print(f"  ✗ {e}")
+        print(f"  x {e}")
     sys.exit(1)
 else:
     print("\nALL GATES PASSED")

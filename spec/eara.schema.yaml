@@ -26,8 +26,8 @@ properties:
 
   eara_version:
     type: string
-    const: "1.0"
-    description: "Schema version. Must be '1.0'."
+    const: "2.0"
+    description: "Schema version. Must be '2.0'."
 
   project:
     type: string
@@ -42,16 +42,19 @@ properties:
   strictness:
     description: >
       Either a profile name (string) or an object with a base profile and
-      overrides that are deep-merged into it.
+      overrides that are deep-merged into it. Normal uses fewer agents with
+      practical enforcement. Ultra forces every agent to internalize the
+      full eARA protocol stack — agents cannot skip what they are forced
+      to read.
     oneOf:
       - type: string
-        enum: [minimal, standard, strict, paranoid]
+        enum: [normal, ultra]
       - type: object
         required: [profile]
         properties:
           profile:
             type: string
-            enum: [minimal, standard, strict, paranoid]
+            enum: [normal, ultra]
           overrides:
             type: object
             description: "Deep-merged into the base profile. Same shape as the profile definition."
@@ -126,7 +129,7 @@ properties:
             description: >
               When true, code that introduces new public surface (functions,
               tools, endpoints, API) is NOT eligible for 'keep' until tests
-              exist that exercise the new code. Enabled at standard+.
+              exist that exercise the new code. Enabled at normal and ultra.
           required:
             type: boolean
         additionalProperties: false
@@ -138,7 +141,7 @@ properties:
             description: >
               When true, after merging parallel work (worktrees, branches),
               ALL gates are re-run from scratch. Not incremental. Enabled
-              at strict+.
+              at ultra (or normal with override).
           required:
             type: boolean
         additionalProperties: false
@@ -171,10 +174,10 @@ properties:
         type: string
         enum: [none, spec_only, spec_and_quality, full]
         description: >
-          none: no review (minimal only).
+          none: no review.
           spec_only: spec compliance reviewer only.
-          spec_and_quality: spec + code quality reviewers (standard default).
-          full: spec + quality + domain-specific reviewers (paranoid default).
+          spec_and_quality: spec + code quality reviewers (normal default).
+          full: spec + quality + domain-specific reviewers (ultra default).
       reviewers:
         type: object
         properties:
@@ -327,14 +330,13 @@ properties:
               record before any commit. The record must list all required
               reviewers with agent IDs and PASS/REJECT results. A commit
               without this record is a protocol violation. Enabled at
-              standard+ by default.
+              normal and ultra by default.
           block_on_missing_reviewer:
             type: boolean
             default: true
             description: >
               When true, if ANY required reviewer shows NOT_DISPATCHED or
-              has not returned, the commit is blocked. Cannot be set to
-              false at strict or paranoid.
+              has not returned, the commit is blocked.
           require_all_returned:
             type: boolean
             default: true
@@ -515,11 +517,11 @@ properties:
       log_dispatches:
         type: boolean
         default: false
-        description: "If true, also log subagent dispatches (not just experiment results). Enabled at paranoid."
+        description: "If true, also log subagent dispatches (not just experiment results). Enabled at ultra."
       log_review_findings:
         type: boolean
         default: false
-        description: "If true, include reviewer findings in the log. Enabled at paranoid."
+        description: "If true, include reviewer findings in the log. Enabled at ultra."
 
   # ─── Boundaries ─────────────────────────────────────────────────────
 
@@ -581,13 +583,14 @@ properties:
         type: string
         enum: [note, halt_and_audit]
         description: >
-          note: record the correction, continue (minimal only).
+          note: record the correction, continue.
           halt_and_audit: stop, grep all outputs for old framing, fix every
-          instance, verify the fix, then resume (standard+).
+          instance, verify the fix, then resume (default for both normal
+          and ultra).
       verify_framing_on_commit:
         type: boolean
         default: false
-        description: "At paranoid: check that no committed content contains banned terms."
+        description: "At ultra: check that no committed content contains banned terms."
 
   # ─── Source Files ───────────────────────────────────────────────────
 

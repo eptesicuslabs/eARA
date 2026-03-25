@@ -117,7 +117,7 @@ if the build fails). Boundary and framing checks last (only at commit time).
 
 ## Post-Merge Verification Gate
 
-**Enabled at:** strict, paranoid.
+**Enabled at:** ultra (or normal with override).
 
 This gate is special — it runs AFTER merging parallel work, not after
 a single experiment. It exists because worktree isolation creates a
@@ -153,7 +153,7 @@ would not have been caught without post-merge verification.
 
 ## Test-Before-Ship Gate
 
-**Enabled at:** standard, strict, paranoid.
+**Enabled at:** normal and ultra.
 
 ### Trigger
 
@@ -190,7 +190,7 @@ have known.
 
 ## Scope Gate (Boundary Enforcement)
 
-**Enabled at:** strict, paranoid.
+**Enabled at:** ultra (or normal with override).
 
 ### Trigger
 
@@ -203,7 +203,7 @@ For each staged file:
 2. Does it match a `forbidden_file_patterns` entry?
 3. If forbidden or if the file belongs to a different project: BLOCK.
 
-At **paranoid** with `cross_project_verification`:
+At **ultra** with `cross_project_verification`:
 - Also check that no artifact in the working directory has been placed in
   the wrong project root.
 
@@ -218,9 +218,9 @@ runtime repo.
 
 ## Framing Gate
 
-**Enabled at:** standard (on correction), paranoid (on every commit).
+**Enabled at:** normal and ultra (on correction), ultra (on every commit).
 
-### On user correction (standard+)
+### On user correction (normal and ultra)
 
 When the user corrects a project-level assumption:
 1. HALT current work.
@@ -229,7 +229,7 @@ When the user corrects a project-level assumption:
 4. Verify (search returns zero results).
 5. Resume.
 
-### On every commit (paranoid)
+### On every commit (ultra)
 
 When `framing.verify_framing_on_commit` is true:
 1. Before committing, search all staged content for terms in

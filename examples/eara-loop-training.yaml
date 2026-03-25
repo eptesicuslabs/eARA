@@ -3,11 +3,11 @@
 # adjusting hyperparameters, architecture, and data pipeline. Runs for
 # hours or days. Never stops until interrupted.
 
-eara_version: "1.0"
+eara_version: "2.0"
 project: "Language model fine-tuning"
 description: "Fine-tune a language model on domain-specific data"
 
-strictness: standard
+strictness: normal
 mode: loop
 
 metric:

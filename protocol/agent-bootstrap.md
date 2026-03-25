@@ -6,6 +6,10 @@ This document defines what an agent does when it starts a session in a project
 that contains an `eara.yaml` configuration file. The bootstrap is mandatory and
 must complete before any implementation work begins.
 
+The bootstrap sequence differs between normal and ultra strictness. Ultra
+requires reading the full protocol stack and injecting it into every
+dispatched subagent.
+
 ---
 
 ## Step 1: Detect and Parse
@@ -26,8 +30,8 @@ not enforced.
 ## Step 2: Resolve Strictness Profile
 
 1. Read the `strictness` field.
-2. If it is a string (`minimal`, `standard`, `strict`, `paranoid`), load the
-   corresponding profile from `spec/strictness-profiles.yaml`.
+2. If it is a string (`normal` or `ultra`), load the corresponding profile
+   from `spec/strictness-profiles.yaml`.
 3. If it is an object with `profile` and `overrides`, load the base profile
    and deep-merge the overrides:
    - Scalars and booleans: overrides REPLACE base values.
@@ -38,7 +42,46 @@ not enforced.
 
 ---
 
-## Step 3: Classify the Task
+## Step 3: Read Protocol Stack (mode-dependent)
+
+### Normal mode bootstrap
+
+Read the following files:
+
+1. `eara.yaml` (already parsed in Step 1)
+2. The relevant operational protocol:
+   - `protocol/execution-protocol.md` if mode is `execution`
+   - `protocol/loop-protocol.md` if mode is `loop`
+
+Reading `spec/program.md` is recommended but not required. The agent operates
+with the configuration and the relevant protocol.
+
+### Ultra mode bootstrap
+
+Read ALL of the following files. This is not optional:
+
+1. `eara.yaml` (already parsed in Step 1)
+2. `spec/program.md` — the complete behavioral contract
+3. `spec/rationalizations.yaml` — the 28 mandatory halt signals
+4. The relevant operational protocol:
+   - `protocol/execution-protocol.md` if mode is `execution`
+   - `protocol/loop-protocol.md` if mode is `loop`
+5. `protocol/review-protocol.md` — subagent dispatch rules
+6. `protocol/gate-protocol.md` — gate ordering and failure handling
+
+**Why ultra requires the full stack:** Agents skip eARA files when they are
+not forced to read them. The normal bootstrap trusts agents to follow the
+configuration. Ultra does not trust agents — it forces them to read the
+protocol before they can act. This is the defining difference.
+
+**Subagent injection:** At ultra, every dispatched subagent also receives the
+full protocol stack in its prompt. Not a summary. Not "follow eARA." The
+actual file contents. A subagent that has the rationalizations in its prompt
+cannot skip them.
+
+---
+
+## Step 4: Classify the Task
 
 Read the `mode` field:
 
@@ -62,7 +105,7 @@ If ambiguous, ask the user. Do not guess.
 
 ---
 
-## Step 4: Initialize Gates
+## Step 5: Initialize Gates
 
 Run all required gates to verify the project is in a clean starting state:
 
@@ -81,7 +124,7 @@ See `gate-protocol.md` for gate checking order and failure handling.
 
 ---
 
-## Step 5: Initialize Metric (if applicable)
+## Step 6: Initialize Metric (if applicable)
 
 If `metric` is defined:
 
@@ -94,7 +137,7 @@ criterion), the gates themselves are the composite metric.
 
 ---
 
-## Step 6: Initialize Logging
+## Step 7: Initialize Logging
 
 See `logging-protocol.md` for full logging details.
 
@@ -109,7 +152,7 @@ If `logging.auto_log` is true:
 
 ---
 
-## Step 7: Load Rationalizations
+## Step 8: Load Rationalizations
 
 Load `spec/rationalizations.yaml`. For each rationalization:
 
@@ -122,9 +165,12 @@ Load `spec/rationalizations.yaml`. For each rationalization:
    - Reconsider the approach.
    - This is not optional. Rationalizations are mandatory halt signals.
 
+At **ultra**, the rationalizations were already read in Step 3 as part of
+the full protocol stack. This step activates them as pattern-match triggers.
+
 ---
 
-## Step 8: Internalize Framing
+## Step 9: Internalize Framing
 
 If `framing` is defined:
 
@@ -136,12 +182,12 @@ If `framing` is defined:
      Search all outputs and files for the old framing. Fix every instance.
      Verify the fix (search should return zero results). Resume only after
      verification.
-4. If `framing.verify_framing_on_commit` is true (paranoid): before every
+4. If `framing.verify_framing_on_commit` is true (ultra): before every
    commit, check that no staged content contains terms from `project_is_not`.
 
 ---
 
-## Step 9: Load Boundaries (if applicable)
+## Step 10: Load Boundaries (if applicable)
 
 If `boundaries` is defined:
 
@@ -150,13 +196,13 @@ If `boundaries` is defined:
    before every commit, verify each staged file matches the
    `allowed_file_patterns` and does not match `forbidden_file_patterns`
    for its project.
-3. If `boundaries.cross_project_verification` is true (paranoid), also
-   verify that no artifact in the working directory belongs to a different
-   project in the boundary list.
+3. If `boundaries.cross_project_verification` is true (ultra by default),
+   also verify that no artifact in the working directory belongs to a
+   different project in the boundary list.
 
 ---
 
-## Step 10: Begin Work
+## Step 11: Begin Work
 
 Bootstrap is complete. Proceed to:
 

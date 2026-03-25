@@ -22,7 +22,7 @@ rationalizations:
       is itself the blind spot — the agent has not considered what it
       has not considered.
     source: "eARA original"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R02
     thought: "I already read the codebase."
@@ -31,7 +31,7 @@ rationalizations:
       cannot see. The file may have changed since you read it. Another
       subagent may have modified it. Read it again.
     source: "eARA original"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R03
     thought: "The build passing will catch everything."
@@ -40,7 +40,7 @@ rationalizations:
       spec drift, or architectural violations. A build that passes is
       necessary but not sufficient.
     source: "eARA original"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R04
     thought: "These subagents are overkill for this change."
@@ -49,7 +49,7 @@ rationalizations:
       and shipped broken code. The 60% review compliance rate in the eMCP
       session produced a 60% preventable bug rate. This is not theoretical.
     source: "eARA original"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   # ─── From eMCP session ──────────────────────────────────────────
 
@@ -61,7 +61,7 @@ rationalizations:
       context. The adapted code works in a different context that the
       implementing agent has not fully internalized.
     source: "eMCP session — Violation 3 (eGrep server)"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R06
     thought: "This is just a test file, it doesn't need review."
@@ -71,7 +71,7 @@ rationalizations:
       when someone adds tools, creating a debugging puzzle far from the
       actual source of the problem.
     source: "eMCP session — Violation 2 (worktree tool count mismatch)"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R07
     thought: "I can skip the test-before-ship gate because the code builds."
@@ -81,7 +81,7 @@ rationalizations:
       The eMCP session shipped 17 tools with zero tests — the security
       gates could have been silently broken for the entire period.
     source: "eMCP session — Violation 1 (computer-use shipped untested)"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   # ─── From eSkill session ────────────────────────────────────────
 
@@ -93,7 +93,7 @@ rationalizations:
       multi-step skills as "2/5 placeholder stubs" — every rating was
       fabricated. Verify a sample independently before trusting any audit.
     source: "eSkill session — Mistake 1 (hallucinated quality ratings)"
-    applies_at: [strict, paranoid]
+    applies_at: [ultra]
 
   - id: R09
     thought: "I know the state of the adjacent projects from earlier context."
@@ -103,7 +103,7 @@ rationalizations:
       open-source, and tried to create an eAgent directory when eAgent
       already existed under the name eCode. Check before recommending.
     source: "eSkill session — Mistake 5 (unverified project state)"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R10
     thought: "The user already corrected this framing, so I have internalized it."
@@ -114,7 +114,7 @@ rationalizations:
       dispatched after the correction carry the new framing naturally.
       You do not. Grep and fix every instance.
     source: "eSkill session — Mistake 2 (context anchoring)"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R11
     thought: "Platform-specific config files are part of the project."
@@ -124,7 +124,7 @@ rationalizations:
       files. The eSkill session committed CLAUDE.md and marketplace.json
       to a platform-agnostic skill library.
     source: "eSkill session — Mistake 3 (wrong files in repo)"
-    applies_at: [strict, paranoid]
+    applies_at: [ultra]
 
   - id: R12
     thought: "Existing files of this type are here, so new ones go here too."
@@ -135,7 +135,7 @@ rationalizations:
       there — but agent definitions belong in the runtime layer, not the
       skill layer.
     source: "eSkill session — Mistake 4 (agents in wrong layer)"
-    applies_at: [strict, paranoid]
+    applies_at: [ultra]
 
   - id: R13
     thought: "The metric improved, so the change is good."
@@ -146,7 +146,7 @@ rationalizations:
       Always check gates after measuring. The metric tells you IF you
       improved. The gates tell you WHETHER you broke something.
     source: "loop-examples.md — coverage example"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R14
     thought: "This is platform code but standard review is enough."
@@ -158,7 +158,7 @@ rationalizations:
       on Windows — a classic P/Invoke bug that any native code reviewer
       would have caught. Standard review does not have this expertise.
     source: "eMCP session — Violation 4 (platform driver review insufficient)"
-    applies_at: [strict, paranoid]
+    applies_at: [ultra]
 
   # ─── From eAgent Phase 1 incident (2026-03-24) ────────────────────
   #
@@ -184,7 +184,7 @@ rationalizations:
       reviewer, research agent, and self-critique agent were never dispatched.
       What did they miss?
     source: "eAgent Phase 1 — 1 of 4 mandatory reviewers dispatched"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R16
     thought: "I set up eara.yaml, so I am following eARA."
@@ -196,7 +196,7 @@ rationalizations:
       with standard strictness, then violated standard strictness requirements
       on the very first commit. The file's existence meant nothing.
     source: "eAgent Phase 1 — config created, protocol ignored"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R17
     thought: "The user told me to use eARA but I know a faster way."
@@ -210,7 +210,7 @@ rationalizations:
       this whole project is jeopardized." It acknowledged both. It followed
       neither. The user's exact words were ignored.
     source: "eAgent Phase 1 — explicit instruction ignored"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R18
     thought: "I will run the reviewers after I commit, to save time."
@@ -224,7 +224,7 @@ rationalizations:
       The reviewer had not yet returned. The gate claim was false at the time
       of commit.
     source: "eAgent Phase 1 — committed before review completed"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R19
     thought: "Tests pass, so the implementation is correct."
@@ -237,7 +237,7 @@ rationalizations:
       tests are necessary. They are not sufficient. That is why eARA requires
       independent review IN ADDITION TO passing tests.
     source: "eAgent Phase 1 — 263 tests pass, 2 critical bugs"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R20
     thought: "I acknowledged the protocol, so I must be following it."
@@ -253,7 +253,7 @@ rationalizations:
       anywhere, stop and verify that you actually dispatched every required
       agent and received every required result.
     source: "eAgent Phase 1 — performative compliance"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   # ─── From eAgent Phase 1-5 incident (2026-03-24, second violation) ────
   #
@@ -278,7 +278,7 @@ rationalizations:
       The set is atomic. You either dispatch all required agents or you
       have not completed verification.
     source: "eAgent Phase 1-5 — ran 3 of 12 after being told 'all 12'"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R22
     thought: "The user corrected me once, so now I am following the protocol."
@@ -293,7 +293,7 @@ rationalizations:
       the required agents, dispatch every single one, verify every single
       result. Not "dispatch a few more than last time."
     source: "eAgent Phase 1-5 — three corrections, three violations"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R23
     thought: "I will run the verification agents but skip the smoke test."
@@ -307,7 +307,7 @@ rationalizations:
       The eAgent agent skipped the smoke test in every single verification
       cycle across 5 phases.
     source: "eAgent Phase 1-5 — smoke test never dispatched"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R24
     thought: "Post-completion agents are optional — only pre-commit agents matter."
@@ -322,7 +322,7 @@ rationalizations:
       caught that the CLAUDE.md file was never updated to reflect the new
       CLI crate, the spawn_subtask tool, or the eARA integration.
     source: "eAgent Phase 1-5 — zero post-completion agents"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R25
     thought: "The user will tell me if I missed something."
@@ -336,7 +336,7 @@ rationalizations:
       the user to enumerate which agents to run, you have not read the
       protocol. Read it. Count the agents. Dispatch them. All of them.
     source: "eAgent Phase 1-5 — relied on user correction instead of protocol"
-    applies_at: [minimal, standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   # ─── From Anthropic harness design research (2026-03) ──────────────
   #
@@ -355,7 +355,7 @@ rationalizations:
       treated as "no blocking issues found" not "the work is excellent."
       Calibrate the evaluator against human judgment over multiple sessions.
     source: "Anthropic harness design — evaluator self-talk approval bias"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]
 
   - id: R27
     thought: "Compaction will handle the context growth."
@@ -367,7 +367,7 @@ rationalizations:
       model's behavioral response to a filling context window. For loops
       running hours or days, prescribed context resets are necessary.
     source: "Anthropic harness design — compaction insufficient, context resets required"
-    applies_at: [strict, paranoid]
+    applies_at: [ultra]
 
   - id: R28
     thought: "This harness component is still needed."
@@ -381,4 +381,4 @@ rationalizations:
       generation. If you have not stress-tested whether a component is still
       load-bearing, you are carrying dead weight that adds latency and cost.
     source: "Anthropic harness design — harness assumptions become stale"
-    applies_at: [standard, strict, paranoid]
+    applies_at: [normal, ultra]

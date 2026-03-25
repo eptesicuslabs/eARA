@@ -78,7 +78,7 @@ columns:
       fail:lint: the lint gate failed.
       fail:spec_compliance: the spec reviewer rejected.
       fail:{custom_gate_name}: a custom gate failed.
-      skip: gates were not checked (e.g., minimal profile with tests off).
+      skip: gates were not checked (e.g., tests disabled via override).
     required: true
 
   - name: commit_hash
@@ -98,7 +98,7 @@ columns:
     type: string_or_null
     description: >
       Issues found by reviewers, if any. Only populated when
-      logging.log_review_findings is true (paranoid profile).
+      logging.log_review_findings is true (ultra profile).
       Semicolon-separated if multiple findings.
     required: false
 

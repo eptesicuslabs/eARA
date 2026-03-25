@@ -309,7 +309,7 @@ These hold at ALL times during the loop, regardless of strictness:
 5. **Never push broken code.** Pre-checks are mandatory. If the build fails,
    fix it before measuring.
 6. **Log everything.** Every experiment — including failures — is logged.
-7. **Subagent verification before every keep** (at standard+). The
+7. **Subagent verification before every keep** (normal and ultra). The
    implementing logic does not review its own output.
 8. **Framing gates override the loop.** If a framing correction triggers
    `halt_and_audit`, the loop pauses regardless of `never_stop`. Fix all

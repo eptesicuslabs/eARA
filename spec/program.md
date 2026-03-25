@@ -18,8 +18,10 @@ At session start:
 
 1. **Find `eara.yaml`** in the project root. Parse it. If it does not exist
    or is invalid, HALT and report to the user.
-2. **Resolve strictness.** Load the named profile (minimal/standard/strict/paranoid).
+2. **Resolve strictness.** Load the named profile (normal or ultra).
    If overrides are specified, deep-merge them into the base profile.
+   At **ultra**, also read `spec/program.md` and `spec/rationalizations.yaml`
+   in full — these are required, not recommended.
 3. **Classify mode.** `execution` = changes are known. `loop` = agent runs
    autonomously for extended periods (training, monitoring, automation).
    If `mode` is not set, classify from the task:
@@ -35,7 +37,7 @@ At session start:
 7. **Load rationalizations.** These are mandatory STOP signals (Section 7).
 8. **Load framing.** Store the project identity and banned terms.
 9. **Load boundaries.** If `boundaries` is defined, activate scope gate
-   (strict+) and cross-project verification (paranoid). See Section 9.
+   (ultra) and cross-project verification (ultra). See Section 9.
 
 ---
 
@@ -57,7 +59,7 @@ FOR EACH task:
                   e. test_before_ship  f. custom gates
                   If any required gate fails: fix or discard. Never proceed.
   4. REVIEW     — Dispatch reviewer subagents (Section 5):
-                  spec compliance + code quality (at standard+).
+                  spec compliance (normal), + code quality (ultra).
                   This is where spec_compliance verification happens —
                   it is a review dispatch, not a separate gate run.
   5. DECIDE     — Binary: KEEP (all gates pass + reviewers approve)
@@ -69,12 +71,12 @@ FOR EACH task:
   6. COMMIT     — Atomic commit. One per logical unit. Descriptive message.
   7. LOG        — Append to results.tsv (Section 6).
   8. POST-MERGE — If parallel work was merged: re-run ALL gates from
-                  scratch. Not incremental. (strict+ only)
+                  scratch. Not incremental. (ultra only)
 ```
 
-At **minimal** strictness, the agent may implement directly without
-dispatching a subagent. At **standard+**, subagent dispatch is mandatory
-for non-trivial changes.
+Subagent dispatch is mandatory for non-trivial changes at both normal
+and ultra. At **ultra**, every dispatched subagent receives the full
+eARA protocol stack injected into its prompt — not just task context.
 
 ---
 
@@ -143,7 +145,7 @@ per experiment.
 **DECIDE**: Compare metric_before vs metric_after using `metric.direction`.
 Improved → KEEP. Equal or worse → DISCARD.
 
-**KEEP**: Dispatch reviewers (at standard+). If reviewer rejects → DISCARD
+**KEEP**: Dispatch reviewers (at normal and ultra). If reviewer rejects → DISCARD
 instead (revert the commit). Otherwise commit. Update "last known good" state.
 
 **DISCARD**: `git reset --hard` to last good commit. Record why.
@@ -177,7 +179,7 @@ are too strict, or the hypothesis space is exhausted.
 4. **Simple over complex.** Removing something for equal results is a win.
 5. **Never push broken code.** Pre-checks are mandatory.
 6. **Log everything.** Every experiment, including failures.
-7. **Subagent verification before every keep** (at standard+).
+7. **Subagent verification before every keep** (normal and ultra).
 8. **Framing gates override the loop.** If a framing gate triggers
    (`halt_and_audit`), the loop pauses. Fix framing, then resume. Framing
    contamination invalidates everything built on wrong assumptions.
@@ -192,36 +194,47 @@ are too strict, or the hypothesis space is exhausted.
 
 ### Behavior Matrix
 
-| Behavior | minimal | standard | strict | paranoid |
-|---|---|---|---|---|
-| Build gate | required | required | required | required |
-| Test gate | off | required | required | required |
-| Lint gate | off | off | required | required |
-| Spec compliance review | off | required | required | required |
-| Code quality review | off | required | required | required |
-| Native/security review | off | off | per-file | always |
-| Calibration checks | off | off | on | required |
-| Evidence in reviews | off | off | quotes+lines | quotes+lines+sizes |
-| Auto logging | off | on | on | on+dispatches |
-| Scope/boundary gate | off | off | on | on+cross-project |
-| Framing gate | note | halt_and_audit | halt_and_audit | halt_and_audit + check on every commit |
-| Post-merge verification | off | off | on | on |
-| Test-before-ship | off | on | on | on |
+| Behavior | normal | ultra |
+|---|---|---|
+| Build gate | required | required |
+| Test gate | required | required |
+| Lint gate | advisory | required |
+| Spec compliance review | required | required |
+| Code quality review | required | required |
+| Native/security review | per-file overrides | per-file (defaults included) |
+| Calibration checks | off | on (sample_size: 3) |
+| Evidence in reviews | off | quotes + lines + sizes |
+| Auto logging | on | on + dispatches + findings |
+| Scope/boundary gate | off | on + cross-project |
+| Framing gate | halt_and_audit | halt_and_audit + verify on every commit |
+| Post-merge verification | off | on |
+| Test-before-ship | on | on |
+| Agent bootstrap depth | eara.yaml only | full protocol stack (program.md, rationalizations) |
+| Inject protocol into subagents | no | yes |
+| Pre-commit agents | 3 (research, self_critique, smoke_test) | 4 (+ plan_compliance) |
+| Reviewer agents | 1 (spec_compliance) | 2+ (spec_compliance, code_quality, + per-file) |
+| Post-commit agents | none | 4 (analysis, research_grounding, plan_compliance_post, documentation) |
+| Iterative refinement | max 3 | max 5 |
+| Contract negotiation | off | on |
 
 ### When to use each:
 
-- **minimal** — Throwaway scripts, quick prototypes. "Does it build?"
-- **standard** — Production work. Build, test, independent review. Default.
-- **strict** — High-stakes, multi-project. Graduated review, boundary enforcement,
-  post-merge verification. Addresses every failure from the eMCP session.
-- **paranoid** — Trust nothing. Evidence requirements, calibration checks,
-  framing verification on every commit. Addresses every failure from the
-  eSkill session.
+- **normal** — Default for any work. Production software, prototypes,
+  standard engineering. Fewer agents, practical enforcement. The agent
+  follows eARA discipline without the overhead of full protocol injection.
+- **ultra** — High-stakes, multi-project, compliance-critical, or any
+  situation where agents have been observed skipping eARA files. Every
+  dispatched subagent receives the full protocol stack. Every claim needs
+  evidence. Every boundary is enforced. Every verifier is verified.
+  Addresses every observed failure from the eMCP, eSkill, and eAgent
+  sessions.
 
 ### Profile resolution:
 
 Profiles deep-merge with overrides. Scalars replace. Arrays append.
-Objects merge recursively.
+Objects merge recursively. A normal project can enable specific ultra
+features (e.g., calibration, evidence requirements) without adopting
+the full ultra agent complement.
 
 ---
 
@@ -231,8 +244,8 @@ Objects merge recursively.
 
 > **The implementing agent does not review its own work. Ever.**
 
-This is non-negotiable at standard+. Empirical evidence: 60% review
-compliance → 60% preventable bugs (eMCP session).
+This is non-negotiable at both normal and ultra. Empirical evidence:
+60% review compliance → 60% preventable bugs (eMCP session).
 
 ### Reviewer types:
 
@@ -243,11 +256,12 @@ line. Receives: actual file content + spec + adversarial instruction
 **Code quality reviewer** — Checks naming, duplication, edge cases,
 conventions. Receives: actual file content + project conventions.
 
-**Native code reviewer** (strict+ per-file, paranoid always) — Checks
-sign/unsigned mismatches, pointer lifetime, platform assumptions.
+**Native code reviewer** (per-file overrides at normal, default per-file
+patterns at ultra) — Checks sign/unsigned mismatches, pointer lifetime,
+platform assumptions.
 
-**Security reviewer** (strict+ per-file, paranoid always) — Checks auth,
-crypto, permissions boundaries.
+**Security reviewer** (per-file overrides at normal, default per-file
+patterns at ultra) — Checks auth, crypto, permissions boundaries.
 
 ### What to send reviewers:
 
@@ -257,16 +271,16 @@ crypto, permissions boundaries.
 - ✗ NOT the implementer's self-report as truth
 - ✗ NOT session history
 
-### Evidence requirements (strict+):
+### Evidence requirements (ultra, or normal with overrides):
 
 When enabled, reviewers must include:
 - Direct quotes from reviewed files (`require_quotes`)
 - Line numbers for every claim (`require_line_numbers`)
-- File sizes for audit assessments (`require_file_sizes`, paranoid only)
+- File sizes for audit assessments (`require_file_sizes`, ultra)
 
 Responses without required evidence are REJECTED and re-dispatched.
 
-### Calibration checks (strict+):
+### Calibration checks (ultra, or normal with overrides):
 
 Before trusting an audit or assessment subagent's output:
 
@@ -296,7 +310,7 @@ timestamp  experiment_id  agent_type  status  metric_before  metric_after  gates
 - **Append only.** Never modify existing entries.
 - **Log failures, not just successes.** Discards are as informative as keeps.
 - **Timestamps are UTC.** ISO 8601 format.
-- **Auto-log at standard+.** The framework logs, not the agent.
+- **Auto-log at normal and ultra.** The framework logs, not the agent.
 - **One entry per decision.** Each KEEP or DISCARD gets exactly one row.
 
 ---
@@ -321,9 +335,9 @@ These are not warnings. They are mandatory halt signals.
 | R11 | "Platform-specific config files are part of the project." | Platform-specific artifacts belong in platform-specific repos. |
 | R12 | "Existing files of this type are here, so new ones go here too." | Existing patterns may be wrong. Verify boundaries before following patterns. |
 | R13 | "The metric improved, so the change is good." | Improvement without gate verification means you may have broken something else. |
-| R14 | "This is platform code but standard review is enough." | Platform/native code has distinct bugs (sign/unsigned, pointer lifetime). Standard review lacks this expertise. |
-| R15 | "I dispatched one reviewer, that counts as eARA compliance." | Standard requires BOTH spec compliance AND code quality review. One reviewer is a protocol violation, not partial credit. |
-| R16 | "I set up eara.yaml, so I am following eARA." | Creating the config is step 1 of 9. Writing eara.yaml then ignoring its contents is worse than not having it — it creates a false audit trail. |
+| R14 | "This is platform code but normal review is enough." | Platform/native code has distinct bugs (sign/unsigned, pointer lifetime). Normal review lacks this expertise — use per-file overrides or ultra. |
+| R15 | "I dispatched one reviewer, that counts as eARA compliance." | Normal requires spec compliance review. Ultra requires spec compliance AND code quality. One reviewer at ultra is a protocol violation, not partial credit. |
+| R16 | "I set up eara.yaml, so I am following eARA." | Creating the config is step 1 of the bootstrap. Writing eara.yaml then ignoring its contents is worse than not having it — it creates a false audit trail. |
 | R17 | "The user told me to use eARA but I know a faster way." | "Use eARA" is a direct instruction, not a suggestion. Substituting your own process is insubordination, not efficiency. |
 | R18 | "I will run the reviewers after I commit, to save time." | Review happens BEFORE commit. A commit is a declaration the work is verified. Committing then reviewing means you declared verification you did not have. |
 | R19 | "Tests pass, so the implementation is correct." | Tests verify what they test, not what they do not test. 263 passing tests and 2 critical bugs (dead-letter channel, fabricated lookup key). Passing tests are necessary, not sufficient. |
@@ -341,7 +355,7 @@ These are not warnings. They are mandatory halt signals.
 
 ## 5b. Commit Gate: Mandatory Review Receipt (v1.1)
 
-**Applies at: standard, strict, paranoid. Cannot be skipped.**
+**Applies at: normal and ultra. Cannot be skipped.**
 
 Before ANY commit, produce this verification record:
 
@@ -385,7 +399,7 @@ received every required result.
 
 ## 5c. Iterative Refinement (v2.0)
 
-**When enabled (standard+), replaces single-pass PASS/REJECT with a
+**Enabled at both normal and ultra. Replaces single-pass PASS/REJECT with a
 fix-and-re-review cycle.** Based on Anthropic's GAN-inspired harness where
 5-15 iterations between generator and evaluator produced substantially
 better results.
@@ -394,8 +408,8 @@ When a reviewer returns ISSUES (not REJECT):
 1. Generator fixes the identified problems.
 2. Same reviewer re-evaluates (continuity matters).
 3. Repeat up to `max_iterations` times.
-4. If max reached with unresolved issues: DISCARD at paranoid, agent's
-   judgment call at strict/standard.
+4. If max reached with unresolved issues: DISCARD at ultra, agent's
+   judgment call at normal.
 
 REJECT is still immediate DISCARD — the approach is fundamentally wrong.
 ISSUES means it needs polish. The iteration loop is for polish, not for
@@ -409,9 +423,9 @@ refining.
 
 ## 5d. Contract Negotiation (v2.0)
 
-**When enabled (strict+), generator and evaluator agree on acceptance
-criteria before implementation starts.** Produces a written contract at
-`.eara-contract.md`.
+**When enabled (ultra by default, or normal with override), generator and
+evaluator agree on acceptance criteria before implementation starts.**
+Produces a written contract at `.eara-contract.md`.
 
 The contract defines: what "done" looks like, how success is verified,
 what constitutes REJECT vs ISSUES. This prevents scope creep (evaluator
@@ -422,8 +436,9 @@ invents new requirements during review) and ambiguous acceptance
 
 ## 5e. Context Resets for Long Loops (v2.0)
 
-**When enabled (strict+), the loop performs full context resets at defined
-intervals** rather than relying on automatic compaction.
+**When enabled, the loop performs full context resets at defined intervals**
+rather than relying on automatic compaction. Available at both normal and
+ultra; configured per-project in `eara.yaml`.
 
 Anthropic found compaction insufficient — Claude exhibited "context anxiety"
 (prematurely concluding work as context fills). Full resets resolve this.
@@ -458,8 +473,8 @@ working scratchpad, not permanent storage. See `context-reset-protocol.md`.
 8. code_quality — independent reviewer approves quality
 
 **Phase 3 — Boundary and framing gates (commit-time):**
-9. scope_gate — all files in correct project? (strict+)
-10. framing_gate — no banned terms in output? (paranoid: every commit)
+9. scope_gate — all files in correct project? (ultra)
+10. framing_gate — no banned terms in output? (ultra: every commit)
 
 ### Failure handling:
 
@@ -470,16 +485,16 @@ working scratchpad, not permanent storage. See `context-reset-protocol.md`.
 
 ### Special gates:
 
-**Test-before-ship** (standard+): New public surface (functions, tools,
-endpoints, types) is NOT eligible for KEEP until tests exist.
+**Test-before-ship** (normal and ultra): New public surface (functions,
+tools, endpoints, types) is NOT eligible for KEEP until tests exist.
 
-**Post-merge verification** (strict+): After merging parallel work, re-run
+**Post-merge verification** (ultra): After merging parallel work, re-run
 ALL gates from scratch. Clean build. Full test suite. Not incremental.
 
-**Scope gate** (strict+): Every committed file checked against boundary
+**Scope gate** (ultra): Every committed file checked against boundary
 definitions. Forbidden patterns block the commit.
 
-**Framing gate** (standard+ on correction, paranoid on every commit):
+**Framing gate** (normal and ultra on correction, ultra on every commit):
 On user correction → halt, grep all outputs, fix every instance, verify
 zero results, then resume.
 
@@ -491,8 +506,9 @@ For multi-project workspaces, `boundaries` in `eara.yaml` defines which
 files belong where. Each project has `allowed_file_patterns` and
 `forbidden_file_patterns`.
 
-When `scope_gate: true` (strict+): every staged file is checked.
-When `cross_project_verification: true` (paranoid): check across all roots.
+When `scope_gate: true` (ultra by default): every staged file is checked.
+When `cross_project_verification: true` (ultra by default): check across
+all roots.
 
 ---
 
@@ -536,8 +552,9 @@ monitoring is a third. They are not the only three.
 
 ```
 SESSION START:
-  Parse eara.yaml → Resolve profile → Classify mode → Check gates →
-  Measure baseline → Init logging → Load rationalizations → Begin work
+  Parse eara.yaml → Resolve profile (normal/ultra) → Classify mode →
+  Check gates → Measure baseline → Init logging → Load rationalizations →
+  At ultra: read full protocol stack → Begin work
 
 EXECUTION (each task):
   Describe → Dispatch → Pre-check → Review → Keep/Discard → Commit → Log
@@ -548,10 +565,11 @@ LOOP (each iteration):
 
 ALWAYS:
   ✓ Pre-checks before every experiment
-  ✓ Subagent verification (standard+)
+  ✓ Subagent verification (normal and ultra)
   ✓ Binary keep/discard
-  ✓ Append-only logging (standard+)
+  ✓ Append-only logging
   ✓ Rationalizations as STOP signals
+  ✓ Full protocol injection into subagents (ultra)
   ✗ Never skip review
   ✗ Never "keep with known issues"
   ✗ Never trust your own assessment of your own work

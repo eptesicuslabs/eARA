@@ -13,14 +13,10 @@ exactly which experiment introduced the change.
 
 > The log is maintained by the framework, not the agent.
 
-When `logging.auto_log` is true (standard+ profiles), logging happens
-automatically after every KEEP or DISCARD decision. The agent does not need
-to remember to log. This removes the "I forgot to log" failure mode that
-the eMCP session demonstrated.
-
-At **minimal** strictness (`auto_log: false`), the agent may log manually
-but is not required to. This is discouraged — even throwaway work benefits
-from a record.
+When `logging.auto_log` is true (enabled at both normal and ultra), logging
+happens automatically after every KEEP or DISCARD decision. The agent does
+not need to remember to log. This removes the "I forgot to log" failure
+mode that the eMCP session demonstrated.
 
 ---
 
@@ -60,20 +56,20 @@ timestamp  experiment_id  agent_type  status  metric_before  metric_after  gates
 | gates_status | string | pass | `pass`, `fail:build`, `fail:test`, `skip` |
 | commit_hash | 7-char hash or `-` | a1b3bee | `-` if discarded |
 | description | string (no tabs) | switched to streaming encoder | What was attempted |
-| review_findings | string or `-` | uint/int mismatch in scroll | Only at paranoid (log_review_findings) |
+| review_findings | string or `-` | uint/int mismatch in scroll | Only at ultra (log_review_findings) |
 | duration_seconds | number | 180 | Wall-clock from start to decision |
 
 ---
 
 ## When to Log
 
-### Always logged (at standard+):
+### Always logged (at normal and ultra):
 
 1. **After KEEP**: experiment passed all gates, committed.
 2. **After DISCARD**: experiment failed metric, gates, or review.
 3. **After ERROR**: unexpected failure (build crash, timeout, etc.).
 
-### Optionally logged (at paranoid, when log_dispatches is true):
+### Optionally logged (at ultra, when log_dispatches is true):
 
 4. **Subagent dispatches**: when an implementation subagent is sent.
 5. **Review dispatches**: when a reviewer subagent is sent.

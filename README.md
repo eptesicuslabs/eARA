@@ -8,7 +8,7 @@ Originally inspired by [karpathy/autoresearch](https://github.com/karpathy/autor
 
 ## Getting Started
 
-The agent reads `spec/program.md` at session start. That single file is the complete behavioral contract covering both modes, all four strictness profiles, the gate hierarchy, iterative review, and the commit gate.
+The agent reads `spec/program.md` at session start. That single file is the complete behavioral contract covering both modes, both strictness profiles, the gate hierarchy, iterative review, and the commit gate.
 
 The project root should contain an `eara.yaml` conforming to `spec/eara.schema.yaml`. See `examples/` for ready-to-use configurations at each strictness level. The root-level `eara.yaml` in this repository is an ML training template for autoresearch-compatible setups and does not use the v2 schema.
 
@@ -41,12 +41,14 @@ The agent does not stop within the loop. If it runs out of ideas, it re-reads th
 
 | Profile | Philosophy | Use Case |
 |---|---|---|
-| minimal | Does it build? | Throwaway scripts, prototypes |
-| standard | Build, test, independent review | Production software |
-| strict | Verify the verifiers, enforce boundaries | Multi-project, high-stakes |
-| paranoid | Every claim needs evidence | Compliance-critical work |
+| normal | Build, test, verify independently | Default for any work |
+| ultra | Every agent reads the protocol, every claim needs evidence | High-stakes, compliance-critical |
 
-Profiles determine which gates are mandatory, whether subagent verification is required, how many reviewers are dispatched, whether calibration checks run on audit subagents, and whether framing is verified at every commit. Each level is derived from observed failures at the level below it.
+**Normal** uses fewer agents with practical enforcement. The agent follows eARA discipline without the overhead of full protocol injection. Three pre-commit agents, one reviewer, no post-commit agents.
+
+**Ultra** forces every dispatched subagent to receive the full eARA protocol stack injected into its prompt. Agents cannot skip what they are forced to read. Four pre-commit agents, two or more reviewers, four post-commit agents. Calibration, evidence requirements, boundary enforcement, and framing verification are all enabled by default.
+
+Both profiles support overrides. A normal project can enable specific ultra features (e.g., calibration, evidence requirements) without adopting the full ultra agent complement.
 
 ## Principles
 
@@ -54,7 +56,7 @@ Profiles determine which gates are mandatory, whether subagent verification is r
 
 **Binary keep/discard.** The experiment either passes all gates and reviewers, or it is reverted. There is no "keep with known issues."
 
-**Subagent verification.** The implementing agent does not review its own work. An independent subagent with fresh context verifies every experiment. At standard strictness and above, this is non-negotiable.
+**Subagent verification.** The implementing agent does not review its own work. An independent subagent with fresh context verifies every experiment. This is non-negotiable at both normal and ultra.
 
 **Iterative refinement.** Reviewers return structured feedback (PASS, ISSUES, or REJECT). On ISSUES, the generator fixes and resubmits. The reviewer re-evaluates. Up to 3-5 cycles per experiment.
 
@@ -62,7 +64,9 @@ Profiles determine which gates are mandatory, whether subagent verification is r
 
 **Rationalizations as halt signals.** The rationalizations table (28 entries, each traced to a specific observed failure) acts as a pattern match against the agent's own reasoning. If the agent catches itself thinking a listed thought, it must stop.
 
-**Commit gate.** At standard+ strictness, every commit requires a structured REVIEW GATE VERIFICATION record and an AGENT COUNT GATE record listing each required agent and reviewer with IDs and results. Commits without these records are protocol violations.
+**Commit gate.** Every commit requires a structured REVIEW GATE VERIFICATION record and an AGENT COUNT GATE record listing each required agent and reviewer with IDs and results. Commits without these records are protocol violations.
+
+**Protocol injection (ultra).** Every dispatched subagent receives the full eARA protocol stack in its prompt. Not a summary. Not "follow eARA." The actual file contents. This is the mechanism that prevents agents from skipping eARA files.
 
 ## Gates
 
@@ -76,12 +80,12 @@ Gates protect everything the metric does not measure. They prevent the agent fro
 spec/
   program.md                        behavioral contract (all domains)
   eara.schema.yaml                  JSON Schema for eara.yaml
-  strictness-profiles.yaml          profile definitions
+  strictness-profiles.yaml          profile definitions (normal, ultra)
   rationalizations.yaml             28 mandatory halt signals
   results-schema.yaml               results.tsv column definitions
 
 protocol/
-  agent-bootstrap.md                session initialization
+  agent-bootstrap.md                session initialization (normal vs ultra)
   loop-protocol.md                  loop state machine
   execution-protocol.md             non-loop discipline
   review-protocol.md                subagent dispatch, iterative refinement, commit gate
@@ -90,10 +94,8 @@ protocol/
   context-reset-protocol.md         context management for long sessions
 
 examples/
-  eara-minimal.yaml                 throwaway work
-  eara-standard.yaml                production software
-  eara-strict.yaml                  multi-project monorepo
-  eara-paranoid.yaml                trust-nothing mode
+  eara-normal.yaml                  production software
+  eara-ultra.yaml                   trust-nothing multi-project
   eara-loop-training.yaml           ML training (never_stop)
   eara-loop-automation.yaml         long-running optimization
 
@@ -108,7 +110,9 @@ eara.yaml                           ML config template (local/kaggle/runpod)
 
 Read `spec/program.md`. It is the complete behavioral contract. Follow it exactly.
 
-Pre-checks are not optional. Subagent verification is not optional at standard and above. There is no "keep with known issues."
+Pre-checks are not optional. Subagent verification is not optional. There is no "keep with known issues."
+
+At ultra strictness, you must also read `spec/rationalizations.yaml` and inject the full protocol stack into every subagent you dispatch.
 
 ## License
 
